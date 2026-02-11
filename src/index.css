@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-900 text-white antialiased overflow-hidden;
+  }
+}
+
+/* Custom Glitch Animations */
+@keyframes flicker {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes flash {
+
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-flicker {
+  animation: flicker 0.1s infinite alternate;
+}
+
+.animate-flash {
+  animation: flash 1s infinite;
+}
+
+.glitch-text {
+  position: relative;
+  text-shadow: 2px 0 red, -2px 0 cyan;
+}
+
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(34, 211, 238, 0.5);
+}
