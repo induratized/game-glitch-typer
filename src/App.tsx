@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { TypingArea } from './components/TypingArea';
 import { GlitchMeter } from './components/GlitchMeter';
-import Mascot from './components/Mascot';
+import RoamingMascots from './components/RoamingMascots';
 import { playSound, speak } from './engine/sound';
 import confetti from 'canvas-confetti';
 import clsx from 'clsx';
@@ -204,15 +204,8 @@ function App() {
                     <div className="floating-candy right">🍭</div>
                 </div> */}
 
-                {/* Roaming background mascots (large, slow) - multiple variants */}
-            <div className="absolute inset-0 pointer-events-none -z-10">
-                <div className="absolute top-6 left-8 roaming-mascot roam-1"><Mascot size={320} variant="lollipop" /></div>
-                <div className="absolute top-20 left-[20%] roaming-mascot roam-2"><Mascot size={260} variant="wrapped" /></div>
-                <div className="absolute bottom-10 right-6 roaming-mascot roam-3"><Mascot size={300} variant="gumdrop" /></div>
-                <div className="absolute top-[35%] right-10 roaming-mascot roam-2"><Mascot size={220} variant="star" /></div>
-                <div className="absolute left-[60%] bottom-24 roaming-mascot roam-1"><Mascot size={240} variant="donut" /></div>
-                <div className="absolute right-[45%] top-[10%] roaming-mascot roam-3"><Mascot size={200} variant="choco" /></div>
-            </div>
+                {/* Roaming background mascots (JS driven with collisions) */}
+                <RoamingMascots />
 
                 {/* Meter */}
                 <GlitchMeter value={glitchMeter} />
