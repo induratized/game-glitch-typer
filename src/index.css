@@ -20,6 +20,17 @@
   font-display: swap;
 }
 
+/* Local font: Roar Guroes (for hero title) */
+@font-face {
+  font-family: 'Roar Guroes';
+  src: url('/assets/fonts/Roar-Guroes.otf') format('opentype'), 
+       url('/assets/fonts/Roar-Guroes.ttf') format('truetype'),
+       url('/assets/fonts/RoarGuroes.woff2') format('woff2');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Placeholder faces for fonts user will upload (Chubby Snack + Playful Rocket) */
 @font-face {
   font-family: 'ChubbySnack';
@@ -45,7 +56,7 @@
 /* Chubby snack (score/level) and Playfull Rocket (UI) fonts uploaded to public/assets/fonts */
 @font-face {
   font-family: 'Chubsy Snack';
-  src: url('/assets/fonts/Chubsy%20Snack.otf') format('opentype'), url('/assets/fonts/Chubsy%20Snack.ttf') format('truetype');
+  src: url('/assets/fonts/Chubsy-Snack.otf') format('opentype'), url('/assets/fonts/Chubsy%20Snack.ttf') format('truetype');
   font-weight: 400 800;
   font-style: normal;
   font-display: swap;
@@ -53,7 +64,7 @@
 
 @font-face {
   font-family: 'Playfull Rocket';
-  src: url('/assets/fonts/Playfull%20Rocket.ttf') format('truetype');
+  src: url('/assets/fonts/Playfull-Rocket.ttf') format('truetype');
   font-weight: 300 800;
   font-style: normal;
   font-display: swap;
@@ -140,12 +151,29 @@ body {
 .mascot-emoji { font-size: calc(var(--mascot-size) * 0.6); line-height: 1; }
 
 .hero-title {
-  font-family: 'Rapunled', 'Fredoka One', 'Baloo 2', cursive;
-  font-weight: 700;
+  font-family: 'Roar Guroes', 'Rapunled', 'Fredoka One', 'Baloo 2', cursive;
+  font-weight: 800;
   font-size: clamp(2.2rem, 6vw, 4rem);
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  text-shadow: 0 6px 18px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03);
+  display: inline-block;
+  line-height: 1; /* avoid clipping from leading */
+  padding-top: 0.15rem; /* give a little breathing room so top isn't trimmed */
+
+  /* Solid punchy color (not rainbow) */
+  color: #FF4D6D; /* punchy candy-pink */
+
+  /* Creamy outline around letters: use text-stroke where supported, fallback to multiple shadows */
+  -webkit-text-stroke: 2px #FFF4DD;
+  text-stroke: 2px #FFF4DD;
+
+  /* add an outer subtle outline fallback for non-webkit browsers */
+  text-shadow:
+    -1px -1px 0 #FFF4DD,
+    1px -1px 0 #FFF4DD,
+    -1px 1px 0 #FFF4DD,
+    1px 1px 0 #FFF4DD,
+    0 6px 18px rgba(0,0,0,0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {
