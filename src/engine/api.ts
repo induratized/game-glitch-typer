@@ -1,20 +1,27 @@
 import { getRandomSentence } from './content';
 
 /**
- * Fetches a random paragraph from Metaphorpsum API.
- * Returns 2-3 sentences of text.
- * Falls back to local sentences if the API fails or is slow.
+ * Fetches random facts (simple natural English) from the MeowFacts API.
+ * Uses HTTPS and includes a strict sanitizer to ensure "Pure English" (no symbols/digits).
  */
 export async function fetchParagraph(): Promise<string> {
     try {
-        const response = await fetch('http://metaphorpsum.com/paragraphs/1/3', {
+        const response = await fetch('https://meowfacts.herokuapp.com/?count=2', {
             method: 'GET',
         });
 
         if (!response.ok) throw new Error('API Response Error');
 
-        const text = await response.text();
-        return text.trim();
+        const json = await response.json();
+        const rawText = (json.data || []).join(' ');
+
+        // Strict Sanitizer: Keep only A-Z, a-z, and spaces.
+        const sanitized = rawText
+            .replace(/[^a-zA-Z\s]/g, '') // Strip symbols, digits, punctuation
+            .replace(/\s+/g, ' ')        // Normalize spaces
+            .trim();
+
+        return sanitized || getRandomSentence();
     } catch (error) {
         console.warn('API fetch failed, using fallback content:', error);
         return getRandomSentence();
