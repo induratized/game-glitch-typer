@@ -17,7 +17,9 @@ describe('TypingArea', () => {
 
     it('renders the visible words', () => {
         render(<TypingArea {...defaultProps} />);
-        expect(screen.getByText('hello')).toBeDefined();
+        // Find 'hello' in the current word (which is split into spans)
+        // We look for the 'flex' container that holds all these spans
+        expect(screen.getByText((_, node) => node?.textContent === 'hello' && node?.classList.contains('flex'))).toBeDefined();
         expect(screen.getByText('world')).toBeDefined();
     });
 
@@ -28,15 +30,14 @@ describe('TypingArea', () => {
 
     it('highlights the current word', () => {
         render(<TypingArea {...defaultProps} currentIndex={0} />);
-        const currentWordElement = screen.getByText('hello');
-        // Find the tile container (motion.div with tile-base class)
-        const tileContainer = currentWordElement.closest('[class*="tile-base"]');
-        expect(tileContainer?.className).toContain('shadow-pop');
+        const currentWordContainer = screen.getByText((_, node) => node?.textContent === 'hello' && node?.classList.contains('flex'));
+        const tileContainer = currentWordContainer.closest('.candy-tile');
+        expect(tileContainer?.className).toContain('current');
     });
 
     it('displays space warning when showSpaceWarning is true', () => {
         render(<TypingArea {...defaultProps} showSpaceWarning={true} />);
-        expect(screen.getByText(/Press Space/i)).toBeDefined();
+        expect(screen.getByText(/PRESS SPACE! 🍬/i)).toBeDefined();
     });
 
     it('applies rotation without crashing', () => {
@@ -46,7 +47,13 @@ describe('TypingArea', () => {
 
     it('shows input progress within the current word', () => {
         render(<TypingArea {...defaultProps} currentInput="he" />);
-        expect(screen.getByText('he')).toHaveClass('text-lime-300');
-        expect(screen.getByText('llo')).toHaveClass('text-white/70');
+        // In the new version, 'h' and 'e' are separate spans with text-candy-mint
+        const h = screen.getByText('h');
+        const e = screen.getByText('e');
+        const l = screen.getAllByText('l')[0];
+
+        expect(h).toHaveClass('text-candy-mint');
+        expect(e).toHaveClass('text-candy-mint');
+        expect(l).toHaveClass('text-white/40');
     });
 });

@@ -295,15 +295,19 @@ function App() {
                             <span className="score-level-font text-sm md:text-lg">x{combo}</span>
                         </div>
                     </div>
-                    <motion.button
-                        onClick={() => setIsSettingsOpen(true)}
-                        className="settings-button-poppy w-10 h-10 md:w-14 md:h-14"
-                        whileHover={{ scale: 1.1, rotate: 15 }}
-                        whileTap={{ scale: 0.9 }}
-                    >
-                        <SettingsIcon isOpen={isSettingsOpen} />
-                    </motion.button>
                 </div>
+            </div>
+
+            {/* Bottom Right Settings */}
+            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
+                <motion.button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="settings-button-poppy w-12 h-12 md:w-16 md:h-16"
+                    whileHover={{ scale: 1.1, rotate: 15 }}
+                    whileTap={{ scale: 0.9 }}
+                >
+                    <SettingsIcon isOpen={isSettingsOpen} />
+                </motion.button>
             </div>
 
             {/* Mobile Title */}

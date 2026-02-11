@@ -53,8 +53,7 @@ export const TypingArea = ({
                         return (
                             <motion.div
                                 key={`${absoluteIndex}-${originalWord}`}
-                                layout
-                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
                                 animate={{
                                     opacity: 1,
                                     scale: isCurrent ? 1.1 : (isPast ? 0.9 : 1),
@@ -62,11 +61,9 @@ export const TypingArea = ({
                                 }}
                                 exit={{
                                     opacity: 0,
-                                    scale: 0.5,
-                                    x: 100,
-                                    y: -100,
-                                    rotate: 15,
-                                    transition: { duration: 0.4, ease: "anticipate" }
+                                    scale: 0.8,
+                                    y: -20,
+                                    transition: { duration: 0.2 }
                                 }}
                                 className={clsx(
                                     "candy-tile tile-gloss",
@@ -115,16 +112,18 @@ export const TypingArea = ({
 
                                 {/* Progress Bar on Tile */}
                                 {isCurrent && (
-                                    <motion.div
-                                        className="absolute bottom-1 left-2 right-2 h-1 bg-candy-mint/40 rounded-full overflow-hidden"
-                                    >
+                                    <div className="absolute bottom-1 left-2 right-2 h-1 bg-white/10 rounded-full overflow-hidden">
                                         <motion.div
-                                            className="h-full bg-candy-mint shadow-[0_0_8px_rgba(122,246,217,0.8)]"
+                                            className="h-full"
                                             initial={{ width: '100%' }}
-                                            animate={{ width: `${wordTimer}%` }}
+                                            animate={{
+                                                width: `${wordTimer}%`,
+                                                backgroundColor: wordTimer > 50 ? '#7AF6D9' : (wordTimer > 25 ? '#FFD166' : '#FF4D6D'),
+                                                boxShadow: wordTimer < 25 ? '0 0 8px #FF4D6D' : 'none'
+                                            }}
                                             transition={{ ease: 'linear', duration: 0.1 }}
                                         />
-                                    </motion.div>
+                                    </div>
                                 )}
                             </motion.div>
                         );
