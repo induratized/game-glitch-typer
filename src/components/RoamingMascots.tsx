@@ -5,15 +5,15 @@ type MascotSpec = {
     id: number;
     size: number;
     variant?:
-        | "lollipop"
-        | "wrapped"
-        | "gumdrop"
-        | "strawberry"
-        | "donut"
-        | "choco"
-        | "cookie"
-        | "cupcake"
-        | "soda";
+    | "lollipop"
+    | "wrapped"
+    | "gumdrop"
+    | "strawberry"
+    | "donut"
+    | "choco"
+    | "cookie"
+    | "cupcake"
+    | "soda";
 };
 
 const DEFAULTS: MascotSpec[] = [
@@ -172,9 +172,9 @@ export default function RoamingMascots({
     return (
         <div
             ref={containerRef}
-            className="absolute inset-0 pointer-events-none -z-10"
+            className="absolute inset-0 pointer-events-none overflow-hidden"
         >
-            {DEFAULTS.map((d) => (
+            {specs.map((d) => (
                 <div
                     key={d.id}
                     style={{ position: "absolute", left: 0, top: 0 }}

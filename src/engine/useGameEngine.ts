@@ -81,9 +81,10 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         if (levelRef.current === 6) {
             setRotation(prev => (prev + 15) % 360); // 360 rotation
         }
-        // Rewind logic: go back 1 word or stay at 0
-        setWordIndex(prev => Math.max(0, prev - 1));
+        // On timeout: Keep current word (don't advance)
+        // setWordIndex(prev => prev + 1); // REMOVED: Keep current word active
         setCurrentInput('');
+        setWordTimer(100);
         // Flash red or shake screen logic handled by UI via state
     }, [onPlaySound]);
 
@@ -106,10 +107,12 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
 
         // Pause decay if level not started OR if player is actively typing (within grace)
         if (!isLevelStartedRef.current || !isIdle) {
+            // Keep loop running even during pause
             timerRef.current = requestAnimationFrame(gameLoop);
             return;
         }
 
+        // Only decay timer when level has started AND player is idle
         setWordTimer(prev => {
             const next = prev - decayRate;
             if (next <= 0) {
@@ -119,6 +122,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
             return next;
         });
 
+        // Always keep loop running while game is playing
         if (gameStateRef.current === 'playing') {
             timerRef.current = requestAnimationFrame(gameLoop);
         }

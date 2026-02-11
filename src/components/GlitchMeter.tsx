@@ -62,16 +62,32 @@ export const GlitchMeter = ({ value }: GlitchMeterProps) => {
                 </div>
             </motion.div>
 
-            {/* Fire State Indicator Spark */}
+            {/* Fire State Indicator Spark & Particles */}
             {state === 'fire' && (
-                <motion.div
-                    className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent rounded-full"
-                    animate={{
-                        opacity: [0.3, 1, 0.3],
-                        scaleX: [1, 1.1, 1]
-                    }}
-                    transition={{ repeat: Infinity, duration: 0.5 }}
-                />
+                <div className="absolute inset-0 pointer-events-none">
+                    {[...Array(6)].map((_, i) => (
+                        <motion.div
+                            key={i}
+                            className="absolute w-1 h-1 bg-red-400 rounded-full"
+                            initial={{ x: "50%", y: "50%", opacity: 1 }}
+                            animate={{
+                                x: `${Math.random() * 200 - 50}%`,
+                                y: `${Math.random() * 200 - 200}%`,
+                                opacity: 0,
+                                rotate: Math.random() * 360
+                            }}
+                            transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                        />
+                    ))}
+                    <motion.div
+                        className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent rounded-full shadow-[0_0_12px_rgba(255,0,0,0.8)]"
+                        animate={{
+                            opacity: [0.3, 1, 0.3],
+                            scaleX: [1, 1.2, 1]
+                        }}
+                        transition={{ repeat: Infinity, duration: 0.5 }}
+                    />
+                </div>
             )}
         </motion.div>
     );

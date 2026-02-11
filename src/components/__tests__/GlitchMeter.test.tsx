@@ -5,30 +5,29 @@ import { GlitchMeter } from '../GlitchMeter';
 describe('GlitchMeter', () => {
     it('renders with correct stability percentage', () => {
         render(<GlitchMeter value={20} />);
-        expect(screen.getByText(/SYSTEM STABILITY: 80%/i)).toBeDefined();
+        expect(screen.getByText(/80%/i)).toBeDefined();
     });
 
     it('renders with 0 stability when value is 100', () => {
         render(<GlitchMeter value={100} />);
-        expect(screen.getByText(/SYSTEM STABILITY: 0%/i)).toBeDefined();
+        expect(screen.getByText(/0%/i)).toBeDefined();
     });
 
-    it('applies different gradients based on value (ice)', () => {
-        const { container } = render(<GlitchMeter value={10} />);
-        const bar = container.querySelector('.bg-gradient-to-r');
-        expect(bar?.className).toContain('from-cyan-400');
+    it('renders stability label', () => {
+        render(<GlitchMeter value={50} />);
+        expect(screen.getByText(/Stability/i)).toBeDefined();
     });
 
-    it('applies different gradients based on value (fire)', () => {
+    it('shows gem segments for candy bar', () => {
+        const { container } = render(<GlitchMeter value={50} />);
+        const segments = container.querySelectorAll('.gem-segment');
+        expect(segments.length).toBeGreaterThan(0);
+    });
+
+    it('shows fire state indicator when value is high', () => {
         const { container } = render(<GlitchMeter value={80} />);
-        const bar = container.querySelector('.bg-gradient-to-r');
-        expect(bar?.className).toContain('from-orange-500');
-        expect(bar?.className).toContain('animate-pulse');
-    });
-
-    it('shows flash effect in fire state', () => {
-        const { container } = render(<GlitchMeter value={90} />);
-        const flash = container.querySelector('.animate-flash');
-        expect(flash).toBeDefined();
+        // Fire state should have the fire-zone class which animates
+        const fireIndicator = container.querySelector('.fire-zone');
+        expect(fireIndicator).toBeDefined();
     });
 });

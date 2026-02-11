@@ -1,51 +1,41 @@
-import { useEffect, useState } from 'react';
-import clsx from 'clsx';
+import { motion } from "framer-motion";
+import clsx from "clsx";
 
 interface PopBadgeProps {
   text: string;
-  type: 'combo' | 'good' | 'unstoppable' | 'levelup' | 'collect';
+  type?: "score" | "combo" | "level" | "error";
   x: number;
   y: number;
-  onComplete?: () => void;
+  onComplete: () => void;
 }
 
-/**
- * PopBadge: floating feedback text that appears and fades away
- * Used for combo hits, score increments, and level-ups
- */
-export function PopBadge({ text, type, x, y, onComplete }: PopBadgeProps) {
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      onComplete?.();
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [onComplete]);
-
-  if (!isVisible) return null;
+export const PopBadge = ({ text, type = "score", x, y, onComplete }: PopBadgeProps) => {
+  const colors = {
+    score: "text-candy-mint shadow-[0_0_8px_rgba(122,246,217,0.6)]",
+    combo: "text-candy-pink shadow-[0_0_8px_rgba(255,122,182,0.6)]",
+    level: "text-candy-lemon shadow-[0_0_8px_rgba(255,243,189,0.6)]",
+    error: "text-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]",
+  };
 
   return (
-    <div
-      className={clsx(
-        'pop-badge fixed pointer-events-none font-bold select-none',
-        type === 'combo' && 'text-pink-400',
-        type === 'good' && 'text-cyan-300',
-        type === 'unstoppable' && 'text-purple-400',
-        type === 'levelup' && 'text-yellow-300 text-3xl',
-        type === 'collect' && 'text-emerald-300'
-      )}
-      style={{
-        left: `${x}px`,
-        top: `${y}px`,
-        animation: `pop-float-fade 800ms ease-out forwards`
+    <motion.div
+      initial={{ opacity: 0, scale: 0.5, x, y }}
+      animate={{
+        opacity: [0, 1, 1, 0],
+        scale: [0.5, 1.2, 1, 0.8],
+        y: y - 100,
+        rotate: [0, -10, 10, 0]
       }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      onAnimationComplete={onComplete}
+      className={clsx(
+        "fixed pointer-events-none z-[100] font-black italic text-2xl drop-shadow-lg score-level-font",
+        colors[type]
+      )}
     >
       {text}
-    </div>
+    </motion.div>
   );
-}
+};
 
 export default PopBadge;

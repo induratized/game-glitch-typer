@@ -22,25 +22,27 @@ export const TypingArea = ({
     rotation
 }: TypingAreaProps & { isLevelStarted: boolean; showSpaceWarning: boolean; rotation: number }) => {
 
-    // Visible window of words (e.g., current - 2 to current + 10)
+    // Visible window of words (e.g., current - 2 to current + 8)
     const visibleStart = Math.max(0, currentIndex - 2);
     const visibleEnd = Math.min(words.length, currentIndex + 8);
     const visibleWords = words.slice(visibleStart, visibleEnd);
 
     return (
         <motion.div
-            className="relative p-8 candy-card rounded-2xl border-2 border-purple-400/40 shadow-2xl overflow-hidden backdrop-blur-sm"
+            className="relative p-10 bg-black/30 backdrop-blur-xl rounded-[40px] border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden playfield-container"
             animate={{ rotate: rotation }}
-            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
         >
             {/* Start Prompt Overlay */}
             {!isLevelStarted && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 backdrop-blur-sm pointer-events-none">
-                    <div className="text-cyan-400 font-mono text-xl animate-pulse tracking-widest">[ TYPE TO START LEVEL {level} ]</div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 backdrop-blur-md pointer-events-none">
+                    <div className="text-candy-mint font-bold text-2xl animate-pulse tracking-[0.2em] transform -rotate-2">
+                        [ TYPE TO START LEVEL {level} ]
+                    </div>
                 </div>
             )}
 
-            <div className="flex flex-wrap gap-3 text-lg md:text-2xl font-semibold leading-relaxed justify-start items-center min-h-[120px]">
+            <div className="flex flex-wrap gap-6 text-2xl font-bold leading-relaxed justify-center items-center min-h-[160px]">
                 <AnimatePresence mode="popLayout">
                     {visibleWords.map((originalWord, i) => {
                         const absoluteIndex = visibleStart + i;
@@ -48,82 +50,81 @@ export const TypingArea = ({
                         const isPast = absoluteIndex < currentIndex;
                         const displayWord = getDisplayWord(originalWord, absoluteIndex);
 
-                        const randomSeed = (originalWord.length + absoluteIndex) % 10;
-                        const flickerDuration = (0.4 + (randomSeed / 10) * 1.1).toFixed(2) + 's';
-
                         return (
                             <motion.div
                                 key={`${absoluteIndex}-${originalWord}`}
                                 layout
-                                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
                                 animate={{
                                     opacity: 1,
+                                    scale: isCurrent ? 1.1 : (isPast ? 0.9 : 1),
                                     y: 0,
-                                    scale: isCurrent ? 1.08 : 1
                                 }}
-                                transition={{
-                                    opacity: { duration: 0.3 },
-                                    layout: { duration: 0.2 },
-                                    scale: { duration: 0.2 }
+                                exit={{
+                                    opacity: 0,
+                                    scale: 0.5,
+                                    x: 100,
+                                    y: -100,
+                                    rotate: 15,
+                                    transition: { duration: 0.4, ease: "anticipate" }
                                 }}
-                                exit={{ opacity: 0, scale: 0.8, filter: "blur(8px)" }}
                                 className={clsx(
-                                    "relative px-4 py-3 rounded-xl transition-all duration-200 tile-base tile-gloss",
-                                    isCurrent && "candy-card shadow-pop border-2 border-candy-pink/60",
-                                    isCurrent ? "text-white z-20" : "text-gray-400",
-                                    isPast && "text-gray-600 opacity-60",
-                                    !isCurrent && !isPast && "hover:text-gray-300"
+                                    "candy-tile tile-gloss",
+                                    isCurrent ? "current" : (isPast ? "past" : "")
                                 )}
-                                style={{
-                                    ...(level === 2 ? {
-                                        animation: `flicker ${flickerDuration} infinite alternate`,
-                                        animationPlayState: isLevelStarted ? 'running' : 'paused'
-                                    } : {})
-                                }}
                             >
-                                <div className="flex items-center gap-2 relative">
-                                    <span className="relative z-20">
-                                        {isCurrent ? (
-                                            <>
-                                                <motion.span
-                                                    className="inline-block"
-                                                    animate={{
-                                                        opacity: level === 4 && isLevelStarted ? [1, 0] : 1
-                                                    }}
-                                                    transition={{
-                                                        duration: level === 4 ? Math.min(2.5, Math.max(0.5, originalWord.length * 0.3)) : 0.3,
-                                                        ease: "linear"
-                                                    }}
+                                <div className="relative z-20 flex items-center">
+                                    {isCurrent ? (
+                                        <div className="relative">
+                                            {/* Mascot Speech Bubble */}
+                                            {showSpaceWarning && currentIndex < words.length - 1 && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.5, y: 10 }}
+                                                    animate={{ opacity: 1, scale: 1, y: -45 }}
+                                                    className="speech-bubble"
                                                 >
-                                                    <span className="text-lime-300 font-bold">{currentInput}</span>
-                                                    <span className="text-white/70">{displayWord.slice(currentInput.length)}</span>
-                                                </motion.span>
+                                                    PRESS SPACE! 🍬
+                                                </motion.div>
+                                            )}
 
-                                                {/* Speech Bubble for Space Warning */}
-                                                {showSpaceWarning && currentIndex < words.length - 1 && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.7, y: 10 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        className="speech-bubble absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap text-white"
-                                                    >
-                                                        ⚠️ Press Space!
-                                                    </motion.div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            isPast ? originalWord : displayWord
-                                        )}
-                                    </span>
+                                            <span className="flex">
+                                                {displayWord.split('').map((char, charIdx) => {
+                                                    const isTyped = charIdx < currentInput.length;
+                                                    const isTypingNow = charIdx === currentInput.length - 1;
+                                                    return (
+                                                        <span
+                                                            key={charIdx}
+                                                            className={clsx(
+                                                                "letter-pop-char font-mono",
+                                                                isTyped ? "text-candy-mint" : "text-white/40",
+                                                                isTypingNow && "pop"
+                                                            )}
+                                                        >
+                                                            {char}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <span className="font-mono">
+                                            {isPast ? originalWord : displayWord}
+                                        </span>
+                                    )}
                                 </div>
 
-                                {/* Progress Bar */}
+                                {/* Progress Bar on Tile */}
                                 {isCurrent && (
                                     <motion.div
-                                        className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-candy-mint to-candy-pink rounded-full z-30"
-                                        initial={{ width: '100%' }}
-                                        animate={{ width: `${wordTimer}%` }}
-                                        transition={{ ease: 'linear', duration: 0.016 }}
-                                    />
+                                        className="absolute bottom-1 left-2 right-2 h-1 bg-candy-mint/40 rounded-full overflow-hidden"
+                                    >
+                                        <motion.div
+                                            className="h-full bg-candy-mint shadow-[0_0_8px_rgba(122,246,217,0.8)]"
+                                            initial={{ width: '100%' }}
+                                            animate={{ width: `${wordTimer}%` }}
+                                            transition={{ ease: 'linear', duration: 0.1 }}
+                                        />
+                                    </motion.div>
                                 )}
                             </motion.div>
                         );

@@ -5,6 +5,12 @@ const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)
 const masterGain = audioCtx.createGain();
 masterGain.connect(audioCtx.destination);
 
+export const resumeAudio = async () => {
+    if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+    }
+};
+
 export const setMuted = (muted: boolean) => {
     masterGain.gain.setTargetAtTime(muted ? 0 : 1, audioCtx.currentTime, 0.01);
 };

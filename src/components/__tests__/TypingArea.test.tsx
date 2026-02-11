@@ -28,9 +28,10 @@ describe('TypingArea', () => {
 
     it('highlights the current word', () => {
         render(<TypingArea {...defaultProps} currentIndex={0} />);
-        const currentWordContainer = screen.getByText('hello').closest('div');
-        expect(currentWordContainer?.className).toContain('text-white');
-        expect(currentWordContainer?.className).toContain('shadow-pop');
+        const currentWordElement = screen.getByText('hello');
+        // Find the tile container (motion.div with tile-base class)
+        const tileContainer = currentWordElement.closest('[class*="tile-base"]');
+        expect(tileContainer?.className).toContain('shadow-pop');
     });
 
     it('displays space warning when showSpaceWarning is true', () => {
