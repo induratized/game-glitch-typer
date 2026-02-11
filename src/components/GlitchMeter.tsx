@@ -26,6 +26,7 @@ export const GlitchMeter = ({ value }: GlitchMeterProps) => {
 
     return (
         <motion.div
+            data-testid="glitch-meter"
             className={clsx(
                 "w-full max-w-2xl flex flex-col gap-3 z-10 transition-all duration-300",
                 state === 'fire' && "fire-zone"

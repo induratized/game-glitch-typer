@@ -7,10 +7,43 @@ import RoamingMascots from './components/RoamingMascots';
 import SettingsModal from './components/SettingsModal';
 import SettingsIcon from './components/SettingsIcon';
 import { PopBadge } from './components/PopBadge';
-import { playSound, speak } from './engine/sound';
+import { playSound, speak, resumeAudio, setMuted, cancelSpeech } from './engine/sound';
 import confetti from 'canvas-confetti';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const HomeIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" className="w-full h-full p-2" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 9.5L12 3L21 9.5V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H15V14H9V21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V9.5Z"
+            stroke="#FFF4DD" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="currentColor" />
+    </svg>
+);
+
+const RestartIcon = () => (
+    <svg viewBox="0 0 24 24" fill="none" className="w-full h-full p-2" xmlns="http://www.w3.org/2000/svg">
+        <path d="M1 4V10H7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M20.49 15L19 19H15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3.51 9C4.517 7.053 6.139 5.437 8.114 4.41C10.089 3.383 12.339 3 14.506 3.31C16.673 3.62 18.665 4.61 20.165 6.12L23 9M1 15L3.835 17.88C5.335 19.39 7.327 20.38 9.494 20.69C11.661 21 13.911 20.617 15.886 19.59C17.861 18.563 19.483 16.947 20.49 15"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const CandyModal = ({ isOpen, title, message, onConfirm, onCancel }: { isOpen: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void }) => (
+    <AnimatePresence>
+        {isOpen && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-gradient-to-br from-white/10 to-white/5 border-2 border-white/20 p-8 rounded-[40px] shadow-[0_32px_64px_rgba(0,0,0,0.5)] max-w-sm w-full text-center backdrop-blur-xl">
+                    <h3 className="text-3xl font-black text-white mb-4 score-level-font">{title}</h3>
+                    <p className="text-white/80 mb-8 font-medium">{message}</p>
+                    <div className="flex gap-4 justify-center">
+                        <button onClick={onCancel} className="px-6 py-3 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all">Cancel</button>
+                        <button onClick={onConfirm} className="px-6 py-3 bg-candy-pink text-white font-bold rounded-2xl shadow-lg shadow-candy-pink/30 hover:scale-105 transition-all">Confirm</button>
+                    </div>
+                </motion.div>
+            </motion.div>
+        )}
+    </AnimatePresence>
+);
 
 function App() {
     const [isMuted] = useState(false);
@@ -46,88 +79,138 @@ function App() {
         isLevelStarted,
         showSpaceWarning,
         isLoading,
-        rotation
+        rotation,
+        resetToHome,
+        restartLevel
     } = useGameEngine({
         initialLevel: 1,
         onPlaySound: (type) => settings.soundFX && playSound(type)
     });
 
     const [hasInteracted, setHasInteracted] = useState(false);
+    const [confirmHome, setConfirmHome] = useState(false);
+    const [confirmRestart, setConfirmRestart] = useState(false);
+
+    const isFadingRef = useRef(false);
 
     const startMusicFadeIn = (audio: HTMLAudioElement) => {
-        // Only start if not already playing or has reached target volume
-        if (!audio.paused && audio.volume > 0) return;
+        // Stop if music is disabled or muted
+        if (!settings.music || isMuted) return;
 
-        audio.play().then(() => {
+        // If already playing and volume is good, no need to start again
+        if (!audio.paused && audio.volume > 0.4 && !isFadingRef.current) return;
+
+        // If already fading, let it finish unless it's paused
+        if (isFadingRef.current && !audio.paused) return;
+
+        const playPromise = audio.play();
+
+        const doFade = () => {
+            if (isFadingRef.current) return;
+            isFadingRef.current = true;
+
             audio.volume = 0;
             const fadeDuration = 3000;
             const targetVolume = 0.45;
             const start = performance.now();
+
             const fade = (now: number) => {
+                // If music was paused or changed during fade, stop the animation
+                if (audio.paused || !settings.music || isMuted) {
+                    isFadingRef.current = false;
+                    return;
+                }
+
                 const elapsed = now - start;
                 const progress = Math.min(elapsed / fadeDuration, 1);
                 audio.volume = progress * targetVolume;
-                if (progress < 1 && !audio.paused) {
+
+                if (progress < 1) {
                     requestAnimationFrame(fade);
+                } else {
+                    isFadingRef.current = false;
                 }
             };
             requestAnimationFrame(fade);
-        }).catch(() => {
-            // Autoplay blocked - will be handled by 'resume' listener
-            console.log("Autoplay blocked, waiting for interaction.");
-        });
+        };
+
+        if (playPromise !== undefined) {
+            playPromise.then(doFade).catch(() => {
+                isFadingRef.current = false;
+                console.log("Autoplay blocked, waiting for interaction.");
+            });
+        } else {
+            doFade();
+        }
     };
 
-    // Handle initial mute state and user interaction for audio
+    // 1. Initialize Audio Instance (Once)
     useEffect(() => {
-        import('./engine/sound').then(({ setMuted, cancelSpeech, resumeAudio }) => {
-            setMuted(isMuted);
-            if (isMuted) cancelSpeech();
+        if (!audioRef.current) {
+            const audio = new Audio(MUSIC_URL);
+            audio.loop = true;
+            audio.volume = 0;
+            audioRef.current = audio;
+        }
+    }, []);
 
-            const resume = () => {
+    // 2. Audio State & Interaction Sync
+    useEffect(() => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        setMuted(isMuted);
+        if (isMuted) cancelSpeech();
+
+        const handleInteraction = () => {
+            if (!hasInteracted) {
                 resumeAudio();
                 setHasInteracted(true);
-                if (settings.music && !isMuted && audioRef.current && (audioRef.current.paused || audioRef.current.volume === 0)) {
-                    startMusicFadeIn(audioRef.current);
-                }
-                window.removeEventListener('click', resume);
-                window.removeEventListener('keydown', resume);
-            };
-            window.addEventListener('click', resume);
-            window.addEventListener('keydown', resume);
-        });
-    }, [isMuted, settings.music]);
+            }
+            if (settings.music && !isMuted && audio.paused) {
+                startMusicFadeIn(audio);
+            }
+        };
+
+        // Attach listeners for global catch-all
+        if (!hasInteracted) {
+            const events = ['click', 'keydown', 'mousedown', 'touchstart'];
+            events.forEach(e => window.addEventListener(e, handleInteraction, { once: true }));
+            return () => events.forEach(e => window.removeEventListener(e, handleInteraction));
+        }
+
+        // Handle settings-driven changes (when interacted)
+        if (settings.music && !isMuted) {
+            if (audio.paused && !isFadingRef.current) {
+                startMusicFadeIn(audio);
+            }
+        } else {
+            audio.pause();
+            isFadingRef.current = false;
+        }
+    }, [isMuted, settings.music, hasInteracted]);
+
+    const handleStartGame = () => {
+        resumeAudio();
+        setHasInteracted(true);
+        if (settings.music && !isMuted && audioRef.current && audioRef.current.paused) {
+            startMusicFadeIn(audioRef.current);
+        }
+        startGame();
+    };
 
     // Handle settings changes
     const handleSettingsChange = (key: string, value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
-    };
-
-    // Background music control
-    useEffect(() => {
-        if (!audioRef.current) {
-            try {
-                audioRef.current = new Audio(MUSIC_URL);
-                audioRef.current.loop = true;
-                audioRef.current.volume = 0;
-                audioRef.current.preload = 'auto';
-            } catch (e) {
-                audioRef.current = null;
+        // Proactively resume/trigger if music is being enabled
+        if (key === 'music' && value && !isMuted) {
+            resumeAudio();
+            setHasInteracted(true);
+            if (audioRef.current && audioRef.current.paused) {
+                startMusicFadeIn(audioRef.current);
             }
         }
-
-        const audio = audioRef.current;
-        if (!audio) return;
-
-        if (settings.music && !isMuted) {
-            // Attempt playback immediately (may be blocked by browser)
-            startMusicFadeIn(audio);
-        } else {
-            audio.pause();
-            audio.currentTime = 0;
-            audio.volume = 0;
-        }
-    }, [settings.music, isMuted]);
+    };
 
     // Derived Phase
     const phase = glitchMeter > 66 ? 'FIRE' : glitchMeter > 33 ? 'WATER' : 'ICE';
@@ -143,13 +226,13 @@ function App() {
                 }
             } else if (e.key === 'Enter' && (gameState === 'idle' || gameState === 'crashed' || gameState === 'victory')) {
                 e.preventDefault();
-                startGame();
+                handleStartGame();
             }
         };
 
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [gameState, handleInput, startGame]);
+    }, [gameState, handleInput, handleStartGame]);
 
     // Mascot Mood Logic
     const mood: Mood = gameState === 'victory' ? 'victory' :
@@ -298,13 +381,46 @@ function App() {
                 </div>
             </div>
 
-            {/* Bottom Right Settings */}
-            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50">
+            {/* Bottom Right Controls */}
+            <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 flex items-center gap-3">
+                {gameState === 'playing' && (
+                    <>
+                        <motion.button
+                            onClick={() => setConfirmHome(true)}
+                            className="settings-button-poppy w-10 h-10 md:w-14 md:h-14 text-cream"
+                            whileHover={{ scale: 1.1, y: -5 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Go to Home"
+                        >
+                            <HomeIcon />
+                        </motion.button>
+                        <motion.button
+                            onClick={() => setConfirmRestart(true)}
+                            className="settings-button-poppy w-10 h-10 md:w-14 md:h-14 text-white"
+                            whileHover={{ scale: 1.1, rotate: -45 }}
+                            whileTap={{ scale: 0.9 }}
+                            title="Restart Level"
+                        >
+                            <RestartIcon />
+                        </motion.button>
+                    </>
+                )}
+                {gameState === 'idle' && (
+                    <motion.button
+                        onClick={() => resetToHome()}
+                        className="settings-button-poppy w-10 h-10 md:w-14 md:h-14 text-cream"
+                        whileHover={{ scale: 1.1, y: -5 }}
+                        whileTap={{ scale: 0.9 }}
+                    >
+                        <HomeIcon />
+                    </motion.button>
+                )}
                 <motion.button
                     onClick={() => setIsSettingsOpen(true)}
                     className="settings-button-poppy w-12 h-12 md:w-16 md:h-16"
                     whileHover={{ scale: 1.1, rotate: 15 }}
                     whileTap={{ scale: 0.9 }}
+                    title="Settings"
                 >
                     <SettingsIcon isOpen={isSettingsOpen} />
                 </motion.button>
@@ -325,9 +441,9 @@ function App() {
                 <AnimatePresence mode="wait">
                     {gameState === 'idle' && (
                         <motion.div key="idle" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="text-center p-8 bg-white/5 rounded-3xl backdrop-blur-md">
-                            <p className="text-2xl text-candy-mint mb-6 font-bold">READY TO TYP_?</p>
-                            <button onClick={startGame} className="px-12 py-4 bg-candy-mint text-white font-black rounded-2xl shadow-lg transform hover:scale-105 transition-all text-xl">
-                                [ PRESS ENTER ]
+                            <p className="text-2xl text-candy-hot-pink mb-6 font-bold">READY TO TYP_?</p>
+                            <button onClick={handleStartGame} className="px-12 py-4 bg-gem-emerald text-candy-cream font-black rounded-2xl shadow-lg transform hover:scale-105 transition-all text-xl">
+                                [&nbsp;&nbsp;PRESS ENTER&nbsp;&nbsp;]
                             </button>
                         </motion.div>
                     )}
@@ -342,7 +458,7 @@ function App() {
                         <motion.div key="crashed" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-12 bg-black/80 rounded-[40px] border-4 border-red-500 shadow-2xl backdrop-blur-xl">
                             <div className="text-5xl font-black text-red-500 mb-6">SYSTEM_CRASH</div>
                             <div className="text-6xl font-black text-white mb-8">{score.toLocaleString()}</div>
-                            <button onClick={startGame} className="px-10 py-4 bg-red-600 text-white font-black rounded-xl text-xl hover:bg-red-500 transition-all">TRY AGAIN</button>
+                            <button onClick={handleStartGame} className="px-10 py-4 bg-red-600 text-white font-black rounded-xl text-xl hover:bg-red-500 transition-all">TRY AGAIN</button>
                         </motion.div>
                     )}
 
@@ -351,7 +467,7 @@ function App() {
                             <h2 className="text-6xl font-black text-white mb-4 drop-shadow-lg">VICTORY_!</h2>
                             <p className="text-xl text-white/90 mb-10 font-bold">Glitch cleared. System Pure.</p>
                             <div className="text-7xl font-black text-white mb-10">{score.toLocaleString()}</div>
-                            <button onClick={startGame} className="px-12 py-5 bg-white text-candy-pink font-black rounded-3xl text-2xl shadow-xl hover:scale-110 transition-transform">PLAY AGAIN</button>
+                            <button onClick={handleStartGame} className="px-12 py-5 bg-white text-candy-pink font-black rounded-3xl text-2xl shadow-xl hover:scale-110 transition-transform">PLAY AGAIN</button>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -365,6 +481,22 @@ function App() {
             </AnimatePresence>
 
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={settings} onSettingsChange={handleSettingsChange} />
+
+            <CandyModal
+                isOpen={confirmHome}
+                title="Go Home?"
+                message="Are you sure you want to go back to the home page? You will lose all your current level progress."
+                onConfirm={() => { setConfirmHome(false); resetToHome(); }}
+                onCancel={() => setConfirmHome(false)}
+            />
+
+            <CandyModal
+                isOpen={confirmRestart}
+                title="Restart Level?"
+                message="Resetting this level will clear your current progress and gems. Your lives will remain the same. Continue?"
+                onConfirm={() => { setConfirmRestart(false); restartLevel(); }}
+                onCancel={() => setConfirmRestart(false)}
+            />
 
             <input ref={hiddenInputRef} type="text" inputMode="text" autoComplete="off" spellCheck="false" className="fixed -bottom-full opacity-0 pointer-events-none"
                 onInput={(e) => { const val = (e.target as HTMLInputElement).value; if (val) { handleInput(val.slice(-1)); (e.target as HTMLInputElement).value = ''; } }}

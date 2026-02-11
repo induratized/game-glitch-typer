@@ -1,40 +1,49 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import App from '../App';
+
+// Mock canvas-confetti
+vi.mock('canvas-confetti', () => ({
+    default: vi.fn(),
+}));
+
+// Mock components that use heavy animations or requestAnimationFrame which JSDOM chokes on
+vi.mock('../components/RoamingMascots', () => ({
+    default: () => <div data-testid="roaming-mascots" />
+}));
+
+vi.mock('../components/Mascot', () => ({
+    __esModule: true,
+    default: () => <div data-testid="mascot" />,
+    Mood: {
+        ICE: 'ice',
+        WATER: 'water',
+        FIRE: 'fire'
+    }
+}));
 
 describe('App Integration', () => {
     it('renders the title and initial state', async () => {
         render(<App />);
-
-        // Wait for loading to finish so we can see the start screen content
-        await waitFor(() => {
-            expect(screen.queryByText(/FETCHING_DATA_NODES/i)).toBeNull();
-        }, { timeout: 4000 });
-
-        expect(screen.getByRole('heading', { name: /GLITCH TYPER/i })).toBeDefined();
-        expect(screen.getByText(/INITIALIZE PROTOCOL_ZERO/i)).toBeDefined();
+        expect(screen.getAllByText(/GLITCH TYPER/i).length).toBeGreaterThan(0);
+        expect(screen.getByText(/READY TO TYP_\?/i)).toBeDefined();
     });
 
     it('starts the game when clicking start button', async () => {
         render(<App />);
-
-        // Wait for loading to finish
-        await waitFor(() => {
-            expect(screen.queryByText(/FETCHING_DATA_NODES/i)).toBeNull();
-        }, { timeout: 4000 });
-
-        // Click Start Button
-        const startBtn = screen.getByText(/\[ PRESS ENTER TO START \]/i);
+        const startBtn = screen.getByText(/\[ PRESS ENTER \]/i);
         fireEvent.click(startBtn);
 
         await waitFor(() => {
-            expect(screen.queryByText(/INITIALIZE PROTOCOL_ZERO/i)).toBeNull();
+            expect(screen.getByTestId('glitch-meter')).toBeDefined();
         }, { timeout: 3000 });
     });
 
-    it('toggles mute state', () => {
+    it('opens settings modal', () => {
         render(<App />);
-        const muteBtn = screen.getByLabelText(/Toggle Mute/i);
-        fireEvent.click(muteBtn);
+        const settingsBtn = screen.getByTitle(/Settings/i);
+        fireEvent.click(settingsBtn);
+        // Look for the "Settings" text in the modal header
+        expect(screen.getByText(/Settings/i)).toBeDefined();
     });
 });

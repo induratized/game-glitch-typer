@@ -23,6 +23,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
     const [glitchMeter, setGlitchMeter] = useState(0); // 0 to 100
     const [errors, setErrors] = useState(0);
     const [lives, setLives] = useState(3);
+    const [scoreAtLevelStart, setScoreAtLevelStart] = useState(0);
 
     const [wordTimer, setWordTimer] = useState(100); // 100%
     const timerRef = useRef<number | null>(null);
@@ -273,6 +274,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
             // Increase level
             setLevel(prev => {
                 const nextLevel = prev + 1;
+                setScoreAtLevelStart(score + (10 * (combo + 1))); // Save score for potential restart
                 if (prev >= 6) {
                     setGameState('victory');
                     if (timerRef.current) cancelAnimationFrame(timerRef.current);
@@ -342,6 +344,48 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         return processed;
     };
 
+    const resetToHome = useCallback(() => {
+        setGameState('idle');
+        setGlitchMeter(0);
+        setScore(0);
+        setCombo(0);
+        setLives(3);
+        setLevel(initialLevel);
+        setWordIndex(0);
+        setCurrentInput('');
+        setIsLevelStarted(false);
+        if (timerRef.current) cancelAnimationFrame(timerRef.current);
+    }, [initialLevel]);
+
+    const restartLevel = useCallback(async () => {
+        // Reset current level specific state
+        setWordIndex(0);
+        setCurrentInput('');
+        setGlitchMeter(0);
+        setWordTimer(100);
+        setScore(scoreAtLevelStart);
+        setCombo(0);
+        setRotation(0);
+        setPristineStreak(0);
+        setErrorsThisWord(0);
+        setIsLevelStarted(false);
+
+        // Re-init with current level text
+        let paragraph = paragraphQueue[0];
+        if (!paragraph) {
+            setIsLoading(true);
+            paragraph = await fetchParagraph();
+            setIsLoading(false);
+        } else {
+            setParagraphQueue(prev => prev.slice(1));
+        }
+
+        setFullText(paragraph.split(' ').filter(w => w.length > 0));
+        setGameState('playing');
+        lastTimeRef.current = performance.now();
+        requestAnimationFrame(gameLoop);
+    }, [scoreAtLevelStart, paragraphQueue, gameLoop]);
+
     return {
         gameState,
         startGame,
@@ -360,6 +404,8 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         isLevelStarted,
         showSpaceWarning,
         isLoading,
-        rotation
+        rotation,
+        resetToHome,
+        restartLevel
     };
 };

@@ -51,7 +51,7 @@ function IconSFX() {
   );
 }
 
-export function SettingsModal({
+export default function SettingsModal({
   isOpen,
   onClose,
   settings,
@@ -153,5 +153,3 @@ export function SettingsModal({
     </AnimatePresence>
   );
 }
-
-export default SettingsModal;

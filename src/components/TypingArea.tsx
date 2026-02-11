@@ -119,7 +119,7 @@ export const TypingArea = ({
                                             animate={{
                                                 width: `${wordTimer}%`,
                                                 backgroundColor: wordTimer > 50 ? '#7AF6D9' : (wordTimer > 25 ? '#FFD166' : '#FF4D6D'),
-                                                boxShadow: wordTimer < 25 ? '0 0 8px #FF4D6D' : 'none'
+                                                boxShadow: wordTimer < 25 ? '0 0 8px #FF4D6D' : '0 0 0px rgba(0,0,0,0)'
                                             }}
                                             transition={{ ease: 'linear', duration: 0.1 }}
                                         />
