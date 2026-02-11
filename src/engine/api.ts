@@ -2,7 +2,8 @@ import { getRandomSentence } from './content';
 
 /**
  * Fetches random facts (simple natural English) from the MeowFacts API.
- * Uses HTTPS and includes a strict sanitizer to ensure "Pure English" (no symbols/digits).
+ * Sanitizes the response to remove control characters while preserving
+ * common punctuation; enforces lowercase for game consistency.
  */
 export async function fetchParagraph(): Promise<string> {
     try {
@@ -15,9 +16,9 @@ export async function fetchParagraph(): Promise<string> {
         const json = await response.json();
         const rawText = (json.data || []).join(' ');
 
-        // Strict Sanitizer: Keep only A-Z, a-z, and spaces.
+        // Sanitizer: keep letters, spaces and common punctuation (. , ! ? : ; ' " - —)
         let sanitized = rawText
-            .replace(/[^a-zA-Z\s]/g, '') // Strip symbols, digits, punctuation
+            .replace(/[^a-zA-Z\s\.\,\!\?\:\;\'\"\-\—]/g, '') // Remove unwanted symbols
             .replace(/\s+/g, ' ')        // Normalize spaces
             .toLowerCase()               // Enforce lowercase
             .trim();

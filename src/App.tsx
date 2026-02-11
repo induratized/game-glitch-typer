@@ -155,6 +155,7 @@ function App() {
             {/* Mute Toggle */}
             <button
                 onClick={() => setIsMuted(p => !p)}
+                aria-label="Toggle Mute"
                 className="absolute top-4 right-4 text-cyan-500 hover:text-white z-50 p-2"
             >
                 {isMuted ? "🔇" : "🔊"}
@@ -222,7 +223,6 @@ function App() {
                         currentInput={currentInput}
                         getDisplayWord={getDisplayWord}
                         wordTimer={wordTimer}
-                        errors={errors}
                         level={level}
                         isLevelStarted={isLevelStarted}
                         showSpaceWarning={showSpaceWarning}

@@ -7,7 +7,6 @@ interface TypingAreaProps {
     currentInput: string;
     getDisplayWord: (word: string, index: number) => string;
     wordTimer: number; // 0-100
-    errors: number;
     level: number;
 }
 
