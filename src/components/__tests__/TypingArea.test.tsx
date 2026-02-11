@@ -30,12 +30,12 @@ describe('TypingArea', () => {
         render(<TypingArea {...defaultProps} currentIndex={0} />);
         const currentWordContainer = screen.getByText('hello').closest('div');
         expect(currentWordContainer?.className).toContain('text-white');
-        expect(currentWordContainer?.className).toContain('bg-white/10');
+        expect(currentWordContainer?.className).toContain('shadow-pop');
     });
 
     it('displays space warning when showSpaceWarning is true', () => {
         render(<TypingArea {...defaultProps} showSpaceWarning={true} />);
-        expect(screen.getByText(/\[ PRESS SPACE \]/i)).toBeDefined();
+        expect(screen.getByText(/Press Space/i)).toBeDefined();
     });
 
     it('applies rotation without crashing', () => {
@@ -45,7 +45,7 @@ describe('TypingArea', () => {
 
     it('shows input progress within the current word', () => {
         render(<TypingArea {...defaultProps} currentInput="he" />);
-        expect(screen.getByText('he')).toHaveClass('text-green-400');
-        expect(screen.getByText('llo')).toHaveClass('text-white/80');
+        expect(screen.getByText('he')).toHaveClass('text-lime-300');
+        expect(screen.getByText('llo')).toHaveClass('text-white/70');
     });
 });

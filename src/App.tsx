@@ -2,7 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { TypingArea } from './components/TypingArea';
 import { GlitchMeter } from './components/GlitchMeter';
-import RoamingMascots from './components/RoamingMascots';
 import { playSound, speak } from './engine/sound';
 import confetti from 'canvas-confetti';
 import clsx from 'clsx';
@@ -10,6 +9,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
     const [isMuted, setIsMuted] = useState(false);
+    const hiddenInputRef = useRef<HTMLInputElement>(null);
+    
     const {
         gameState,
         startGame,
@@ -23,7 +24,6 @@ function App() {
         glitchMeter,
         level,
         getDisplayWord,
-        errors,
         lives,
         isLevelStarted,
         showSpaceWarning,
@@ -63,6 +63,22 @@ function App() {
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [gameState, handleInput, startGame]);
+
+    // Mobile Keyboard Focus Management
+    // Keep hidden input focused during gameplay to trigger mobile keyboard
+    useEffect(() => {
+        if (gameState === 'playing' && hiddenInputRef.current) {
+            hiddenInputRef.current.focus();
+            // Prevent viewport zoom on iOS when focusing input
+            const handleFocus = () => {
+                if (hiddenInputRef.current) {
+                    hiddenInputRef.current.style.fontSize = '16px';
+                }
+            };
+            hiddenInputRef.current.addEventListener('focus', handleFocus);
+            return () => hiddenInputRef.current?.removeEventListener('focus', handleFocus);
+        }
+    }, [gameState]);
 
     // Combo Announcer & FX
     useEffect(() => {
@@ -153,59 +169,66 @@ function App() {
                 )}
             </AnimatePresence>
 
+            {/* Header / HUD */}
+            <div className="absolute top-6 left-6 right-6 flex justify-between items-center gap-4 z-40 flex-wrap">
+                {/* Score & Level Badges */}
+                <div className="flex gap-3 items-center">
+                    <div className="hud-badge">
+                        <span className="badge-icon">💎</span>
+                        <span className="score-level-font">{score.toLocaleString()}</span>
+                    </div>
+                    <div className={clsx("hud-badge", level > 1 && "level-up")}>
+                        <span className="badge-icon">⭐</span>
+                        <span className="score-level-font">Lv {level}</span>
+                    </div>
+                </div>
+
+                {/* Title (Center) */}
+                <h1 className="hero-title flex-1 text-center">
+                    GLITCH TYPER
+                </h1>
+
+                {/* Lives & Combo (Right) */}
+                <div className="flex gap-3 items-center">
+                    <div className="hud-badge">
+                        <span className="badge-icon">❤️</span>
+                        <span className="score-level-font">{lives}</span>
+                    </div>
+                    <div className={clsx(
+                        "hud-badge transition-all",
+                        combo > 20 && "ring-2 ring-purple-400"
+                    )}>
+                        <span className="badge-icon">🔥</span>
+                        <span className="score-level-font">x{combo}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Phase Indicator Badge */}
+            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30">
+                <div className={clsx(
+                    "hud-badge px-6 text-sm font-bold tracking-wider transition-all",
+                    phase === 'FIRE' && "fire-zone",
+                    phase === 'FIRE' ? "ring-2 ring-red-500" : ""
+                )}>
+                    PHASE: <span className={clsx(
+                        "font-black",
+                        phase === 'FIRE' ? "text-red-400" : phase === 'WATER' ? "text-blue-400" : "text-cyan-300"
+                    )}>{phase}</span>
+                </div>
+            </div>
+
             {/* Mute Toggle */}
             <button
                 onClick={() => setIsMuted(p => !p)}
                 aria-label="Toggle Mute"
-                className="absolute top-4 right-4 text-cyan-500 hover:text-white z-50 p-2"
+                className="absolute top-6 right-6 text-cyan-500 hover:text-white z-50 p-2 transition-colors"
             >
                 {isMuted ? "🔇" : "🔊"}
             </button>
 
-            {/* Header / HUD */}
-            <div className="absolute top-8 left-8 right-8 flex justify-between items-end font-mono text-cyan-400 z-40">
-                <div className="text-xl">
-                    <div><span className="score-level-font">SCORE:</span> <span className="text-white">{score.toLocaleString()}</span></div>
-                    <div><span className="score-level-font">LEVEL:</span> <span className="text-white">{level}</span></div>
-                </div>
-                <div className="text-center flex flex-col items-center justify-center">
-                    <h1 className="hero-title candy-title-gradient">
-                        GLITCH TYPER
-                    </h1>
-                    <div className={clsx(
-                        "text-sm font-bold mt-1 tracking-widest transition-colors duration-500",
-                        phase === 'FIRE' ? "text-red-500 animate-pulse" : phase === 'WATER' ? "text-blue-400" : "text-cyan-200"
-                    )}>
-                        PHASE: {phase}
-                    </div>
-                </div>
-                <div className="text-xl text-right score-level-font">
-                    <div className="flex items-center gap-2 justify-end mb-1">
-                        LIVES:
-                        <div className="flex gap-1">
-                            {[...Array(3)].map((_, i) => (
-                                <span key={i} className={i < lives ? "text-red-500 text-2xl" : "text-gray-700 text-2xl"}>♥</span>
-                            ))}
-                        </div>
-                    </div>
-                    <div>COMBO: <span className={clsx("font-bold", combo > 10 ? "text-yellow-400 scale-125 inline-block transition-transform" : "text-white")}>x{combo}</span></div>
-                    {errors > 0 && <div className="text-red-500 text-sm">ERRORS: {errors}</div>}
-                </div>
-            </div>
-
             {/* Main Game Area */}
-            <div className="w-full max-w-4xl flex flex-col gap-12 items-center z-10">
-
-                {/* Floating candies (visual only) */}
-                {/* <div className="absolute top-24 left-8 pointer-events-none">
-                    <div className="floating-candy left small slow">🍬</div>
-                </div>
-                <div className="absolute top-20 right-12 pointer-events-none">
-                    <div className="floating-candy right">🍭</div>
-                </div> */}
-
-                {/* Roaming background mascots (JS driven with collisions) */}
-                <RoamingMascots />
+            <div className="playfield-container mt-32 w-full max-w-2xl flex flex-col gap-8 items-center z-10">
 
                 {/* Meter */}
                 <GlitchMeter value={glitchMeter} />
@@ -335,6 +358,30 @@ function App() {
                     />
                 )}
             </AnimatePresence>
+
+            {/* Hidden Input for Mobile Keyboard (always accessible) */}
+            <input
+                ref={hiddenInputRef}
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                spellCheck="false"
+                className="fixed -bottom-full opacity-0 pointer-events-none text-base"
+                onInput={(e) => {
+                    const char = (e.target as HTMLInputElement).value.slice(-1);
+                    if (char) {
+                        handleInput(char);
+                        (e.target as HTMLInputElement).value = '';
+                    }
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Backspace') {
+                        e.preventDefault();
+                        handleInput('Backspace');
+                        (e.target as HTMLInputElement).value = '';
+                    }
+                }}
+            />
         </div>
     );
 }
