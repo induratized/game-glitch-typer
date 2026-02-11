@@ -33,11 +33,12 @@ function App() {
         onPlaySound: (type) => !isMuted && playSound(type)
     });
 
-    // Handle initial mute state for speech
+    // Handle initial mute state for speech and audio
     useEffect(() => {
-        if (isMuted) {
-            import('./engine/sound').then(({ cancelSpeech }) => cancelSpeech());
-        }
+        import('./engine/sound').then(({ setMuted, cancelSpeech }) => {
+            setMuted(isMuted);
+            if (isMuted) cancelSpeech();
+        });
     }, [isMuted]);
 
     // Derived Phase
@@ -288,18 +289,38 @@ function App() {
                 {(phase !== lastPhase) && (
                     <motion.div
                         className="fixed inset-0 pointer-events-none flex items-center justify-center z-[100]"
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 1.5 }}
-                        transition={{ duration: 0.5 }}
+                        initial={{ opacity: 0, scale: 0.3 }}
+                        animate={{
+                            opacity: [0, 1, 1, 0],
+                            scale: [0.5, 1.2, 1, 2],
+                            rotate: [0, 0, 0, 15]
+                        }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.8, ease: "backOut" }}
                     >
                         <div className={clsx(
-                            "text-9xl font-black tracking-tighter opacity-30 rotate-12",
+                            "text-9xl font-black tracking-tighter drop-shadow-[0_0_30px_rgba(255,255,255,0.5)]",
                             phase === 'FIRE' ? "text-red-500" : phase === 'WATER' ? "text-blue-500" : "text-cyan-100"
                         )}>
                             {phase} PHASE
                         </div>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Phase Flash Effect */}
+            <AnimatePresence>
+                {phase !== lastPhase && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0, 0.4, 0] }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.4 }}
+                        className={clsx(
+                            "fixed inset-0 pointer-events-none z-[90]",
+                            phase === 'FIRE' ? "bg-red-500" : phase === 'WATER' ? "bg-blue-500" : "bg-cyan-500"
+                        )}
+                    />
                 )}
             </AnimatePresence>
         </div>

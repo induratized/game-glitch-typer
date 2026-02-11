@@ -2,6 +2,12 @@
 // Uses Web Audio API for SFX and SpeechSynthesis for Announcer
 
 const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+const masterGain = audioCtx.createGain();
+masterGain.connect(audioCtx.destination);
+
+export const setMuted = (muted: boolean) => {
+    masterGain.gain.setTargetAtTime(muted ? 0 : 1, audioCtx.currentTime, 0.01);
+};
 
 const createOscillator = (freq: number, type: OscillatorType, duration: number) => {
     const osc = audioCtx.createOscillator();
@@ -14,7 +20,7 @@ const createOscillator = (freq: number, type: OscillatorType, duration: number) 
     gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
 
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
+    gain.connect(masterGain);
 
     osc.start();
     osc.stop(audioCtx.currentTime + duration);

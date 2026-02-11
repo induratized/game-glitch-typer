@@ -75,10 +75,11 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         onPlaySound?.('error');
         setCombo(0);
         setShowSpaceWarning(false);
+        setGlitchMeter(prev => Math.min(prev + 20, 100)); // Grow meter on timeout
         setErrorsThisWord(0);
         setPristineStreak(0);
         if (levelRef.current === 6) {
-            setRotation(prev => Math.min(prev + 15, 180));
+            setRotation(prev => (prev + 15) % 360); // 360 rotation
         }
         // Rewind logic: go back 1 word or stay at 0
         setWordIndex(prev => Math.max(0, prev - 1));
@@ -189,7 +190,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
                 setErrorsThisWord(prev => prev + 1);
                 setCombo(0);
                 setGlitchMeter(prev => Math.min(prev + 5, 100));
-                if (level === 6) setRotation(prev => Math.min(prev + 15, 180));
+                if (level === 6) setRotation(prev => (prev + 15) % 360);
                 setPristineStreak(0);
             }
             return;
@@ -220,7 +221,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
             setErrorsThisWord(prev => prev + 1);
             setCombo(0);
             setGlitchMeter(prev => Math.min(prev + 5, 100)); // Small penalty
-            if (level === 6) setRotation(prev => Math.min(prev + 15, 180));
+            if (level === 6) setRotation(prev => (prev + 15) % 360);
             setPristineStreak(0);
             // Optional: Visual shake
         }
