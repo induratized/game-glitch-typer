@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useGameEngine } from './engine/useGameEngine';
 import { TypingArea } from './components/TypingArea';
 import { GlitchMeter } from './components/GlitchMeter';
+import Mascot from './components/Mascot';
 import { playSound, speak } from './engine/sound';
 import confetti from 'canvas-confetti';
 import clsx from 'clsx';
@@ -133,7 +134,7 @@ function App() {
 
     return (
         <div className={clsx(
-            "min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-1000 relative overflow-hidden",
+            "min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-1000 relative overflow-hidden app-playful",
             phase === 'FIRE' ? "bg-red-950" : phase === 'WATER' ? "bg-slate-900" : "bg-slate-950"
         )}>
 
@@ -164,11 +165,11 @@ function App() {
             {/* Header / HUD */}
             <div className="absolute top-8 left-8 right-8 flex justify-between items-end font-mono text-cyan-400 z-40">
                 <div className="text-xl">
-                    <div>SCORE: <span className="text-white">{score.toLocaleString()}</span></div>
-                    <div>LEVEL: <span className="text-white">{level}</span></div>
+                    <div><span className="score-level-font">SCORE:</span> <span className="text-white">{score.toLocaleString()}</span></div>
+                    <div><span className="score-level-font">LEVEL:</span> <span className="text-white">{level}</span></div>
                 </div>
-                <div className="text-center">
-                    <h1 className="text-4xl font-bold italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500 glitch-text">
+                <div className="text-center flex flex-col items-center justify-center">
+                    <h1 className="hero-title candy-title-gradient">
                         GLITCH TYPER
                     </h1>
                     <div className={clsx(
@@ -178,7 +179,7 @@ function App() {
                         PHASE: {phase}
                     </div>
                 </div>
-                <div className="text-xl text-right">
+                <div className="text-xl text-right score-level-font">
                     <div className="flex items-center gap-2 justify-end mb-1">
                         LIVES:
                         <div className="flex gap-1">
@@ -194,6 +195,24 @@ function App() {
 
             {/* Main Game Area */}
             <div className="w-full max-w-4xl flex flex-col gap-12 items-center z-10">
+
+                {/* Floating candies (visual only) */}
+                {/* <div className="absolute top-24 left-8 pointer-events-none">
+                    <div className="floating-candy left small slow">🍬</div>
+                </div>
+                <div className="absolute top-20 right-12 pointer-events-none">
+                    <div className="floating-candy right">🍭</div>
+                </div> */}
+
+                {/* Roaming background mascots (large, slow) - multiple variants */}
+            <div className="absolute inset-0 pointer-events-none -z-10">
+                <div className="absolute top-6 left-8 roaming-mascot roam-1"><Mascot size={320} variant="lollipop" /></div>
+                <div className="absolute top-20 left-[20%] roaming-mascot roam-2"><Mascot size={260} variant="wrapped" /></div>
+                <div className="absolute bottom-10 right-6 roaming-mascot roam-3"><Mascot size={300} variant="gumdrop" /></div>
+                <div className="absolute top-[35%] right-10 roaming-mascot roam-2"><Mascot size={220} variant="star" /></div>
+                <div className="absolute left-[60%] bottom-24 roaming-mascot roam-1"><Mascot size={240} variant="donut" /></div>
+                <div className="absolute right-[45%] top-[10%] roaming-mascot roam-3"><Mascot size={200} variant="choco" /></div>
+            </div>
 
                 {/* Meter */}
                 <GlitchMeter value={glitchMeter} />

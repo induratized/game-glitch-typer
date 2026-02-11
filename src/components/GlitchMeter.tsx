@@ -25,23 +25,27 @@ export const GlitchMeter = ({ value }: GlitchMeterProps) => {
 
     return (
         <motion.div
-            className="w-full max-w-md bg-gray-800 h-6 rounded-full overflow-hidden border border-gray-700 relative shadow-lg"
-            animate={{ scale: [1, 1.05, 1] }}
-            key={state} // Trigger animation on state change
+            className="w-full max-w-md h-10 rounded-full overflow-hidden border border-gray-700 relative shadow-lg candy-card"
+            animate={{ scale: [1, 1.03, 1] }}
+            key={state}
             transition={{ duration: 0.3, ease: "easeOut" }}
         >
             <motion.div
-                className={`h-full bg-gradient-to-r ${colors[state]}`}
+                className={`absolute left-0 top-0 bottom-0 h-full bg-gradient-to-r ${colors[state]} rounded-full`}
+                style={{ transformOrigin: 'left center' }}
                 initial={{ width: 0 }}
                 animate={{ width: `${value}%`, ...shakeEffect }}
                 transition={{ type: 'spring', damping: 20 }}
             />
+
+            {/* Decorative gem segments for candy feel (keeps underlying gradient classes for tests) */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="text-xs font-bold text-white drop-shadow-md">SYSTEM STABILITY: {100 - value}%</div>
+            </div>
+
             {state === 'fire' && (
                 <div className="absolute inset-0 bg-red-500/20 z-10 animate-flash" />
             )}
-            <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow-md">
-                SYSTEM STABILITY: {100 - value}%
-            </div>
         </motion.div>
     );
 };

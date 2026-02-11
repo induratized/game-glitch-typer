@@ -5,7 +5,182 @@
 @layer base {
   body {
     @apply bg-slate-900 text-white antialiased overflow-hidden;
+    font-family: 'Baloo 2', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Local font: Rapunled (provided in public/assets/fonts) */
+@font-face {
+  font-family: 'Rapunled';
+  src: url('/assets/fonts/Rapunled.otf') format('opentype');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Placeholder faces for fonts user will upload (Chubby Snack + Playful Rocket) */
+@font-face {
+  font-family: 'ChubbySnack';
+  src: url('/assets/fonts/ChubbySnack.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'PlayfulRocket';
+  src: url('/assets/fonts/PlayfulRocket.woff2') format('woff2');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Utility classes to apply the new fonts */
+.score-font { font-family: 'ChubbySnack', 'Fredoka One', 'Baloo 2', Rapunled, Inter, system-ui; }
+.score-level-font { font-family: 'ChubbySnack', 'Fredoka One', Rapunled, Inter, system-ui; font-weight:700; }
+.playful-font { font-family: 'PlayfulRocket', Rapunled, 'Fredoka One', Inter, system-ui; }
+
+/* Chubby snack (score/level) and Playfull Rocket (UI) fonts uploaded to public/assets/fonts */
+@font-face {
+  font-family: 'Chubsy Snack';
+  src: url('/assets/fonts/Chubsy%20Snack.otf') format('opentype'), url('/assets/fonts/Chubsy%20Snack.ttf') format('truetype');
+  font-weight: 400 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Playfull Rocket';
+  src: url('/assets/fonts/Playfull%20Rocket.ttf') format('truetype');
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Utility classes to apply fonts */
+.score-level-font { font-family: 'Chubsy Snack', Rapunled, 'Fredoka One', 'Baloo 2', Inter, sans-serif; }
+.app-playful { font-family: 'Playfull Rocket', Rapunled, 'Fredoka One', Inter, sans-serif; }
+
+/* Candy UI helpers */
+.candy-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+}
+
+.tile-gloss {
+  position: relative;
+}
+.tile-gloss:after {
+  content: '';
+  position: absolute;
+  left: 6%;
+  top: 6%;
+  right: 6%;
+  height: 40%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.02));
+  pointer-events: none;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.animate-pop { animation: pop 240ms ease-in-out; }
+
+/* Candy background and floating candies for stronger visual impact */
+body {
+  background: radial-gradient(ellipse at 20% 10%, rgba(183,139,255,0.06) 0%, rgba(122,246,217,0.02) 15%, rgba(0,0,0,0.8) 60%), linear-gradient(180deg, #071226 0%, #050612 100%);
+}
+
+@keyframes floatCandy {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.95 }
+  50% { transform: translateY(-14px) translateX(6px) rotate(8deg); opacity: 1 }
+  100% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.95 }
+}
+
+.floating-candy {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  transform-origin: center;
+  animation: floatCandy 4s ease-in-out infinite;
+}
+
+.floating-candy.small { width: 36px; height: 36px; animation-duration: 3.2s; }
+.floating-candy.slow { animation-duration: 6s; }
+.floating-candy.right { right: 6%; }
+.floating-candy.left { left: 6%; }
+
+.candy-title-gradient {
+  background: linear-gradient(90deg,#FF7AB6,#B78BFF,#7AF6D9,#FF9B77);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Responsive mascot sizing and punchy title */
+.mascot-wrapper {
+  --mascot-size: clamp(56px, 8vw, 140px);
+  width: var(--mascot-size);
+  height: var(--mascot-size);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  transform-origin: center;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.mascot-wrapper:hover { transform: translateY(-6px) scale(1.03); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+.mascot-emoji { font-size: calc(var(--mascot-size) * 0.6); line-height: 1; }
+
+.hero-title {
+  font-family: 'Rapunled', 'Fredoka One', 'Baloo 2', cursive;
+  font-weight: 700;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 6px 18px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-wrapper { transition: none; }
+  .floating-candy { animation: none; }
+}
+
+/* Roaming background mascots */
+.roaming-mascot { pointer-events: none; opacity: 0.12; filter: saturate(1.2) drop-shadow(0 12px 30px rgba(0,0,0,0.25)); }
+.roam-1 { animation: roam-1 22s ease-in-out infinite; }
+.roam-2 { animation: roam-2 28s ease-in-out infinite; }
+.roam-3 { animation: roam-3 20s ease-in-out infinite; }
+
+@keyframes roam-1 {
+  0% { transform: translate(0,0) rotate(0deg); }
+  25% { transform: translate(40px,-30px) rotate(6deg); }
+  50% { transform: translate(-30px,50px) rotate(-4deg); }
+  75% { transform: translate(60px,20px) rotate(8deg); }
+  100% { transform: translate(0,0) rotate(0deg); }
+}
+
+@keyframes roam-2 {
+  0% { transform: translate(0,0) rotate(0deg); }
+  20% { transform: translate(-50px,20px) rotate(-8deg); }
+  45% { transform: translate(40px,40px) rotate(6deg); }
+  70% { transform: translate(-20px,-50px) rotate(-6deg); }
+  100% { transform: translate(0,0) rotate(0deg); }
+}
+
+@keyframes roam-3 {
+  0% { transform: translate(0,0) rotate(0deg); }
+  30% { transform: translate(30px,30px) rotate(4deg); }
+  55% { transform: translate(-40px,-20px) rotate(-5deg); }
+  85% { transform: translate(20px,-40px) rotate(5deg); }
+  100% { transform: translate(0,0) rotate(0deg); }
 }
 
 /* Custom Glitch Animations */
