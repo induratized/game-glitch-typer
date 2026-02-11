@@ -17,14 +17,11 @@ export const TypingArea = ({
     currentInput,
     getDisplayWord,
     wordTimer,
-    errors,
     level,
     isLevelStarted,
-    showSpaceWarning
-}: TypingAreaProps & { isLevelStarted: boolean; showSpaceWarning: boolean }) => {
-
-    // Level 6: Rotation based on errors (15 deg)
-    const rotation = level === 6 ? errors * 15 : 0;
+    showSpaceWarning,
+    rotation
+}: TypingAreaProps & { isLevelStarted: boolean; showSpaceWarning: boolean; rotation: number }) => {
 
     // Visible window of words (e.g., current - 2 to current + 10)
     const visibleStart = Math.max(0, currentIndex - 2);

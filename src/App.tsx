@@ -26,11 +26,19 @@ function App() {
         lives,
         isLevelStarted,
         showSpaceWarning,
-        isLoading
+        isLoading,
+        rotation
     } = useGameEngine({
         initialLevel: 1,
         onPlaySound: (type) => !isMuted && playSound(type)
     });
+
+    // Handle initial mute state for speech
+    useEffect(() => {
+        if (isMuted) {
+            import('./engine/sound').then(({ cancelSpeech }) => cancelSpeech());
+        }
+    }, [isMuted]);
 
     // Derived Phase
     const phase = glitchMeter > 66 ? 'FIRE' : glitchMeter > 33 ? 'WATER' : 'ICE';
@@ -217,6 +225,7 @@ function App() {
                         level={level}
                         isLevelStarted={isLevelStarted}
                         showSpaceWarning={showSpaceWarning}
+                        rotation={rotation}
                     />
                 )}
 

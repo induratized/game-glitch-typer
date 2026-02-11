@@ -39,6 +39,11 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
     const [isLoading, setIsLoading] = useState(false);
     const [showSpaceWarning, setShowSpaceWarning] = useState(false);
 
+    // Level 6 Recovery Logic
+    const [rotation, setRotation] = useState(0);
+    const [pristineStreak, setPristineStreak] = useState(0);
+    const [errorsThisWord, setErrorsThisWord] = useState(0);
+
     useEffect(() => { levelRef.current = level; }, [level]);
     useEffect(() => { comboRef.current = combo; }, [combo]);
     useEffect(() => { gameStateRef.current = gameState; }, [gameState]);
@@ -70,7 +75,11 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         onPlaySound?.('error');
         setCombo(0);
         setShowSpaceWarning(false);
-        setGlitchMeter(prev => Math.min(prev + 20, 100)); // Large penalty
+        setErrorsThisWord(0);
+        setPristineStreak(0);
+        if (levelRef.current === 6) {
+            setRotation(prev => Math.min(prev + 15, 180));
+        }
         // Rewind logic: go back 1 word or stay at 0
         setWordIndex(prev => Math.max(0, prev - 1));
         setCurrentInput('');
@@ -138,6 +147,9 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         setErrors(0);
         setLives(3);
         setLevel(initialLevel);
+        setRotation(0);
+        setPristineStreak(0);
+        setErrorsThisWord(0);
         setGameState('playing');
         setWordTimer(100);
         lastTimeRef.current = performance.now();
@@ -174,8 +186,11 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
                 // Mistake: pressed space early or on wrong word
                 onPlaySound?.('error');
                 setErrors(prev => prev + 1);
+                setErrorsThisWord(prev => prev + 1);
                 setCombo(0);
                 setGlitchMeter(prev => Math.min(prev + 5, 100));
+                if (level === 6) setRotation(prev => Math.min(prev + 15, 180));
+                setPristineStreak(0);
             }
             return;
         }
@@ -202,8 +217,11 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
             }
 
             setErrors(prev => prev + 1);
+            setErrorsThisWord(prev => prev + 1);
             setCombo(0);
             setGlitchMeter(prev => Math.min(prev + 5, 100)); // Small penalty
+            if (level === 6) setRotation(prev => Math.min(prev + 15, 180));
+            setPristineStreak(0);
             // Optional: Visual shake
         }
     };
@@ -215,6 +233,23 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         setGlitchMeter(prev => Math.max(0, prev - 10)); // Recovery
         setWordTimer(100);
         setCurrentInput('');
+
+        // Level 6 Recovery Logic
+        if (level === 6) {
+            if (errorsThisWord === 0) {
+                const nextStreak = pristineStreak + 1;
+                if (nextStreak === 1) {
+                    setRotation(prev => prev / 2);
+                    setPristineStreak(1);
+                } else if (nextStreak >= 2) {
+                    setRotation(0);
+                    setPristineStreak(0);
+                }
+            } else {
+                setPristineStreak(0);
+            }
+        }
+        setErrorsThisWord(0);
 
         if (wordIndex >= fullText.length - 1) {
             // Level/Sentence Complete
@@ -319,6 +354,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
         lives,
         isLevelStarted,
         showSpaceWarning,
-        isLoading
+        isLoading,
+        rotation
     };
 };

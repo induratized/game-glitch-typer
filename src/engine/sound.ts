@@ -68,3 +68,7 @@ export const speak = (text: string) => {
 
     synth.speak(utterance);
 };
+
+export const cancelSpeech = () => {
+    if (synth) synth.cancel();
+};

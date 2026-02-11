@@ -16,10 +16,17 @@ export async function fetchParagraph(): Promise<string> {
         const rawText = (json.data || []).join(' ');
 
         // Strict Sanitizer: Keep only A-Z, a-z, and spaces.
-        const sanitized = rawText
+        let sanitized = rawText
             .replace(/[^a-zA-Z\s]/g, '') // Strip symbols, digits, punctuation
             .replace(/\s+/g, ' ')        // Normalize spaces
+            .toLowerCase()               // Enforce lowercase
             .trim();
+
+        // Truncate to ~150 chars at nearest word
+        if (sanitized.length > 150) {
+            const lastSpace = sanitized.lastIndexOf(' ', 150);
+            sanitized = sanitized.substring(0, lastSpace > 0 ? lastSpace : 150);
+        }
 
         return sanitized || getRandomSentence();
     } catch (error) {
