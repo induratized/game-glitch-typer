@@ -197,16 +197,6 @@ function App() {
         setMuted(isMuted);
         if (isMuted) cancelSpeech();
 
-        // Persistent focus handler for mobile keyboards
-        const handleFocus = () => {
-            // Only focus if playing and settings closed
-            if (gameState === 'playing' && !isSettingsOpen && hiddenInputRef.current) {
-                hiddenInputRef.current.focus({ preventScroll: true });
-            }
-        };
-        window.addEventListener('click', handleFocus);
-        window.addEventListener('touchstart', handleFocus);
-
         const handleInteraction = (event?: Event) => {
             console.log('[Audio Debug] User interaction detected, type:', event?.type);
 
@@ -249,8 +239,6 @@ function App() {
             const events = ['click', 'keydown', 'mousedown', 'touchstart'];
             events.forEach(e => window.addEventListener(e, handleInteraction, { once: true }));
             return () => {
-                window.removeEventListener('click', handleFocus);
-                window.removeEventListener('touchstart', handleFocus);
                 events.forEach(e => window.removeEventListener(e, handleInteraction));
             };
         }
@@ -265,12 +253,7 @@ function App() {
             audio.pause();
             isFadingRef.current = false;
         }
-
-        return () => {
-            window.removeEventListener('click', handleFocus);
-            window.removeEventListener('touchstart', handleFocus);
-        };
-    }, [isMuted, settings.music, hasInteracted]);
+    }, [isMuted, settings.music, hasInteracted, gameState]);
 
     const handleStartGame = () => {
         resumeAudio();
@@ -602,7 +585,20 @@ function App() {
                         )}
 
                         {gameState === 'playing' && (
-                            <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
+                            <motion.div
+                                key="playing"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="w-full"
+                                onClick={() => {
+                                    // Re-focus input when tapping play area (to show keyboard if hidden)
+                                    if (gameState === 'playing' && hiddenInputRef.current) {
+                                        console.log('[Focus Debug] Play area tapped, re-focusing input');
+                                        hiddenInputRef.current.focus();
+                                    }
+                                }}
+                            >
                                 <TypingArea words={fullText} currentIndex={wordIndex} currentInput={currentInput} getDisplayWord={getDisplayWord} wordTimer={wordTimer} level={level} isLevelStarted={isLevelStarted} rotation={rotation} />
                             </motion.div>
                         )}
@@ -670,7 +666,17 @@ function App() {
                 isOpen={confirmRestart}
                 title="Restart Level?"
                 message="Resetting this level will clear your current progress and gems. Your lives will remain the same. Continue?"
-                onConfirm={() => { setConfirmRestart(false); restartLevel(); }}
+                onConfirm={() => {
+                    setConfirmRestart(false);
+                    restartLevel();
+                    // Focus input after restart
+                    setTimeout(() => {
+                        if (hiddenInputRef.current) {
+                            console.log('[Focus Debug] Focusing input after restart');
+                            hiddenInputRef.current.focus();
+                        }
+                    }, 100);
+                }}
                 onCancel={() => setConfirmRestart(false)}
             />
 
