@@ -7,7 +7,7 @@ import RoamingMascots from './components/RoamingMascots';
 import SettingsModal from './components/SettingsModal';
 import SettingsIcon from './components/SettingsIcon';
 import { PopBadge } from './components/PopBadge';
-import { playSound, speak, resumeAudio, setMuted, cancelSpeech } from './engine/sound';
+import { playSound, speak, resumeAudio, setMuted, cancelSpeech, VOLUME_CONFIG } from './engine/sound';
 import confetti from 'canvas-confetti';
 import clsx from 'clsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,7 +95,7 @@ function App() {
     const isFadingRef = useRef(false);
 
     const startMusicFadeIn = (audio: HTMLAudioElement, forceMusic?: boolean) => {
-        const targetVolume = 0.2;
+        const targetVolume = VOLUME_CONFIG.MUSIC;
         const fadeDuration = 3000;
         const isMusicEnabled = forceMusic !== undefined ? forceMusic : settings.music;
 

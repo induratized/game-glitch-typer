@@ -15,6 +15,16 @@ export const setMuted = (muted: boolean) => {
     masterGain.gain.setTargetAtTime(muted ? 0 : 1, audioCtx.currentTime, 0.01);
 };
 
+// Centralized Volume Configuration
+// X = Base Volume (Speech)
+const BASE_VOLUME = 0.5;
+
+export const VOLUME_CONFIG = {
+    VOICE: BASE_VOLUME,       // X = 0.5
+    SFX: BASE_VOLUME * 0.8,   // 0.4
+    MUSIC: BASE_VOLUME * 0.25, // 0.25
+};
+
 const createOscillator = (startFreq: number, type: OscillatorType, duration: number, endFreq?: number) => {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
@@ -26,8 +36,11 @@ const createOscillator = (startFreq: number, type: OscillatorType, duration: num
         osc.frequency.exponentialRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
     }
 
-    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    // Use centralized SFX volume
+    const vol = VOLUME_CONFIG.SFX;
+
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(vol * 0.1, audioCtx.currentTime + duration);
 
     osc.connect(gain);
     gain.connect(masterGain);
@@ -74,21 +87,19 @@ export const speak = (text: string) => {
     synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.volume = 0.5;
-    utterance.rate = 1.0; // Calmer, more natural speed
-    utterance.pitch = 1.1; // Slightly gentle lift
+    utterance.volume = VOLUME_CONFIG.VOICE;
+    utterance.rate = 0.8; // Slower, more soothing and cautious
+    utterance.pitch = 0.9; // Lower pitch, sounds slightly more "sad/fearful" but safe
 
     // Find a soothing female voice
     const voices = synth.getVoices();
-    
-    // Priority: 1. Soft/Female specifically, 2. Google UK English Female (tends to be soothing), 3. Any Female
-    const femaleVoice = voices.find(v => 
-        (v.name.includes('Female') && v.name.includes('Google')) || 
-        v.name.includes('Crystal') || 
-        v.name.includes('Zira') || 
-        v.name.includes('Samantha') ||
-        v.name.includes('Victoria') ||
-        v.name.includes('Female')
+
+    // Priority: Soothing/Female specifically
+    const femaleVoice = voices.find(v =>
+        v.name.includes('Google UK English Female') || // Very clear and polite
+        v.name.includes('Samantha') || // Default Mac soothing
+        v.name.includes('Microsoft Zira') || // Default Windows soothing
+        (v.name.includes('Female') && v.lang.startsWith('en'))
     );
 
     if (femaleVoice) utterance.voice = femaleVoice;
