@@ -114,7 +114,7 @@ A high-intensity typing game where the user battles against a "glitching" system
 - **Terser Minification**: Enabled with console.log removal for production builds
 
 #### Mobile UX Bug Fixes
-1. **Background Music Autoplay**: Fixed by calling `audio.play()` synchronously before React state updates, ensuring it executes within the user gesture handler
+1. **Background Music Reliability**: Refactored audio logic to ensure `audio.play()` is ONLY called from synchronous user gestures (clicks, touches, keystrokes). Created a robust `ensureAudioStarted` helper that consolidates startup logic and bypasses `useEffect` race conditions.
 2. **First Keystroke Registration**: Made input comparison case-insensitive to handle mobile keyboard capitalization (keyboards show capital letters by default)
 3. **Keyboard Focus Behavior**: Removed global focus listeners, keyboard now only appears during gameplay (not on home page or buttons)
 4. **Play Area Tap**: Added click handler to play area allowing users to re-focus keyboard if accidentally hidden

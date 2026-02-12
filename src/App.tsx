@@ -94,88 +94,79 @@ function App() {
 
     const isFadingRef = useRef(false);
 
-    const startMusicFadeIn = (audio: HTMLAudioElement) => {
+    const startMusicFadeIn = (audio: HTMLAudioElement, forceMusic?: boolean) => {
+        const targetVolume = 0.45;
+        const fadeDuration = 3000;
+        const isMusicEnabled = forceMusic !== undefined ? forceMusic : settings.music;
+
         console.log('[Audio Debug] startMusicFadeIn called', {
-            musicEnabled: settings.music,
+            isMusicEnabled,
             isMuted,
             audioPaused: audio.paused,
-            audioVolume: audio.volume,
             isFading: isFadingRef.current
         });
 
-        // Stop if music is disabled or muted
-        if (!settings.music || isMuted) {
-            console.log('[Audio Debug] Music disabled or muted, skipping');
-            return;
-        }
+        if (!isMusicEnabled || isMuted) return;
 
-        // If already playing and volume is good, no need to start again
-        if (!audio.paused && audio.volume > 0.4 && !isFadingRef.current) {
-            console.log('[Audio Debug] Already playing with good volume');
-            return;
-        }
-
-        // If already fading, let it finish unless it's paused
-        if (isFadingRef.current && !audio.paused) {
-            console.log('[Audio Debug] Already fading');
-            return;
-        }
-
-        console.log('[Audio Debug] Attempting to play audio');
+        // Ensure we only trigger play() once and handle the promise
         const playPromise = audio.play();
-
-        const doFade = () => {
-            if (isFadingRef.current) return;
-            isFadingRef.current = true;
-
-            audio.volume = 0;
-            const fadeDuration = 3000;
-            const targetVolume = 0.45;
-            const start = performance.now();
-
-            console.log('[Audio Debug] Starting fade animation');
-
-            const fade = (now: number) => {
-                // If music was paused or changed during fade, stop the animation
-                if (audio.paused || !settings.music || isMuted) {
-                    console.log('[Audio Debug] Fade stopped:', { paused: audio.paused, music: settings.music, muted: isMuted });
-                    isFadingRef.current = false;
-                    return;
-                }
-
-                const elapsed = now - start;
-                const progress = Math.min(elapsed / fadeDuration, 1);
-                audio.volume = progress * targetVolume;
-
-                // Log every 500ms
-                if (Math.floor(elapsed / 500) !== Math.floor((elapsed - 16) / 500)) {
-                    console.log('[Audio Debug] Fade progress:', {
-                        progress: (progress * 100).toFixed(1) + '%',
-                        volume: audio.volume.toFixed(3),
-                        paused: audio.paused
-                    });
-                }
-
-                if (progress < 1) {
-                    requestAnimationFrame(fade);
-                } else {
-                    console.log('[Audio Debug] Fade complete, final volume:', audio.volume);
-                    isFadingRef.current = false;
-                }
-            };
-            requestAnimationFrame(fade);
-        };
 
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 console.log('[Audio Debug] Audio play() succeeded');
-                doFade();
+
+                if (isFadingRef.current) return;
+                isFadingRef.current = true;
+                audio.volume = 0;
+                const start = performance.now();
+
+                const fade = (now: number) => {
+                    const currentMusicEnabled = forceMusic !== undefined ? true : settings.music;
+                    if (audio.paused || !currentMusicEnabled || isMuted) {
+                        isFadingRef.current = false;
+                        return;
+                    }
+
+                    const elapsed = now - start;
+                    const progress = Math.min(elapsed / fadeDuration, 1);
+                    audio.volume = progress * targetVolume;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(fade);
+                    } else {
+                        isFadingRef.current = false;
+                    }
+                };
+                requestAnimationFrame(fade);
             }).catch((error) => {
                 console.error('[Audio Debug] Audio play() failed:', error);
-                isFadingRef.current = false;
             });
-        } else {
-            doFade();
+        }
+    };
+
+    // Helper to reliably start audio on synchronous user gesture
+    const ensureAudioStarted = (event?: Event, forceMusic?: boolean) => {
+        const audio = audioRef.current;
+        if (!audio) return;
+
+        console.log('[Audio Debug] ensureAudioStarted triggered', {
+            type: event?.type,
+            hasInteracted,
+            forceMusic
+        });
+
+        // Resume context regardless of music settings (for sound effects)
+        resumeAudio();
+
+        if (!hasInteracted) {
+            setHasInteracted(true);
+        }
+
+        const isMusicEnabled = forceMusic !== undefined ? forceMusic : settings.music;
+
+        // Only start music if enabled and not already playing
+        if (isMusicEnabled && !isMuted && (audio.paused || audio.volume === 0)) {
+            startMusicFadeIn(audio, forceMusic);
         }
     };
 
@@ -198,43 +189,15 @@ function App() {
         if (isMuted) cancelSpeech();
 
         const handleInteraction = (event?: Event) => {
-            console.log('[Audio Debug] User interaction detected, type:', event?.type);
-
-            // If this is a keyboard event and we're playing, just set hasInteracted and let the keystroke pass through
+            // Passthrough for keyboard during gameplay (don't consume)
             if (event?.type === 'keydown' && gameState === 'playing') {
-                console.log('[Input Debug] Keyboard event during gameplay, setting hasInteracted but not consuming');
-                if (!hasInteracted) {
-                    resumeAudio();
-                    setHasInteracted(true);
-                }
-                // Don't process music/audio here, let the keystroke reach the input
+                ensureAudioStarted(event);
                 return;
             }
-
-            // CRITICAL: Play audio FIRST, before any state updates
-            // This ensures audio.play() is called synchronously in the user gesture handler
-            if (!hasInteracted && settings.music && !isMuted && audio.paused) {
-                console.log('[Audio Debug] Starting music on first interaction (BEFORE state update)');
-                startMusicFadeIn(audio);
-            }
-
-            if (!hasInteracted) {
-                console.log('[Audio Debug] First interaction, resuming audio context');
-                resumeAudio();
-                setHasInteracted(true);
-            } else if (settings.music && !isMuted && audio.paused) {
-                console.log('[Audio Debug] Starting music fade-in');
-                startMusicFadeIn(audio);
-            } else {
-                console.log('[Audio Debug] Music not started:', {
-                    musicEnabled: settings.music,
-                    isMuted,
-                    audioPaused: audio.paused
-                });
-            }
+            ensureAudioStarted(event);
         };
 
-        // Attach listeners for global catch-all
+        // Attach listeners for global catch-all (until first interaction)
         if (!hasInteracted) {
             const events = ['click', 'keydown', 'mousedown', 'touchstart'];
             events.forEach(e => window.addEventListener(e, handleInteraction, { once: true }));
@@ -243,24 +206,25 @@ function App() {
             };
         }
 
-        // Handle settings-driven changes (when already interacted)
-        if (hasInteracted && settings.music && !isMuted) {
-            if (audio.paused && !isFadingRef.current) {
-                console.log('[Audio Debug] Starting music from useEffect (settings changed)');
-                startMusicFadeIn(audio);
+        // Effect-driven sync (PAUSE only, never play from effect)
+        if (hasInteracted) {
+            if (!settings.music || isMuted) {
+                if (!audio.paused) {
+                    console.log('[Audio Debug] Pausing from effect');
+                    audio.pause();
+                    isFadingRef.current = false;
+                }
+            } else {
+                // If music is enabled but somehow paused AFTER interaction began
+                // we don't auto-play here because it might fail without a gesture.
+                // We rely on handleStartGame or settings toggle to trigger play.
+                audio.muted = isMuted;
             }
-        } else if (hasInteracted) {
-            audio.pause();
-            isFadingRef.current = false;
         }
     }, [isMuted, settings.music, hasInteracted, gameState]);
 
     const handleStartGame = () => {
-        resumeAudio();
-        setHasInteracted(true);
-        if (settings.music && !isMuted && audioRef.current && audioRef.current.paused) {
-            startMusicFadeIn(audioRef.current);
-        }
+        ensureAudioStarted();
         startGame();
 
         // Focus the hidden input immediately when starting the game
@@ -275,13 +239,10 @@ function App() {
     // Handle settings changes
     const handleSettingsChange = (key: string, value: boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
+
         // Proactively resume/trigger if music is being enabled
         if (key === 'music' && value && !isMuted) {
-            resumeAudio();
-            setHasInteracted(true);
-            if (audioRef.current && audioRef.current.paused) {
-                startMusicFadeIn(audioRef.current);
-            }
+            ensureAudioStarted(undefined, true);
         }
     };
 
