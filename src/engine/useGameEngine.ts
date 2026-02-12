@@ -185,7 +185,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
 
         // SPACE to advance
         if (char === ' ') {
-            if (currentInput === targetWord) {
+            if (currentInput.toLowerCase() === targetWord.toLowerCase()) {
                 setShowSpaceWarning(false);
                 completeWord();
             } else {
@@ -203,14 +203,14 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
 
         const nextInput = currentInput + char;
 
-        // Check if correct so far
-        if (targetWord.startsWith(nextInput)) {
+        // Check if correct so far (case-insensitive for mobile keyboard compatibility)
+        if (targetWord.toLowerCase().startsWith(nextInput.toLowerCase())) {
             setCurrentInput(nextInput);
             onPlaySound?.('type');
             setShowSpaceWarning(false);
 
-            // AUTO-COMPLETE if it's the LAST word of the paragraph
-            if (nextInput === targetWord && wordIndex === fullText.length - 1) {
+            // AUTO-COMPLETE if it's the LAST word of the paragraph (case-insensitive)
+            if (nextInput.toLowerCase() === targetWord.toLowerCase() && wordIndex === fullText.length - 1) {
                 completeWord();
             }
         } else {
@@ -218,7 +218,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
             onPlaySound?.('error');
 
             // Hint: if they are typing AFTER the word is finished (and it's not the last word)
-            if (currentInput === targetWord && wordIndex < fullText.length - 1) {
+            if (currentInput.toLowerCase() === targetWord.toLowerCase() && wordIndex < fullText.length - 1) {
                 setShowSpaceWarning(true);
             }
 

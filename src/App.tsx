@@ -207,8 +207,19 @@ function App() {
         window.addEventListener('click', handleFocus);
         window.addEventListener('touchstart', handleFocus);
 
-        const handleInteraction = () => {
-            console.log('[Audio Debug] User interaction detected');
+        const handleInteraction = (event?: Event) => {
+            console.log('[Audio Debug] User interaction detected, type:', event?.type);
+
+            // If this is a keyboard event and we're playing, just set hasInteracted and let the keystroke pass through
+            if (event?.type === 'keydown' && gameState === 'playing') {
+                console.log('[Input Debug] Keyboard event during gameplay, setting hasInteracted but not consuming');
+                if (!hasInteracted) {
+                    resumeAudio();
+                    setHasInteracted(true);
+                }
+                // Don't process music/audio here, let the keystroke reach the input
+                return;
+            }
 
             // CRITICAL: Play audio FIRST, before any state updates
             // This ensures audio.play() is called synchronously in the user gesture handler
@@ -268,6 +279,14 @@ function App() {
             startMusicFadeIn(audioRef.current);
         }
         startGame();
+
+        // Focus the hidden input immediately when starting the game
+        setTimeout(() => {
+            if (hiddenInputRef.current) {
+                console.log('[Focus Debug] Focusing input in handleStartGame');
+                hiddenInputRef.current.focus();
+            }
+        }, 100);
     };
 
     // Handle settings changes
@@ -347,9 +366,12 @@ function App() {
 
     // Mobile Keyboard Focus
     useEffect(() => {
+        console.log('[Focus Debug] useEffect triggered, gameState:', gameState, 'hasInteracted:', hasInteracted);
         if (gameState === 'playing' && hiddenInputRef.current) {
+            console.log('[Focus Debug] Focusing hidden input');
             hiddenInputRef.current.focus();
             const handleFocus = () => {
+                console.log('[Focus Debug] Input focused');
                 if (hiddenInputRef.current) hiddenInputRef.current.style.fontSize = '16px';
             };
             hiddenInputRef.current.addEventListener('focus', handleFocus);
@@ -659,8 +681,25 @@ function App() {
                 autoComplete="off"
                 spellCheck="false"
                 className="fixed top-0 left-0 w-px h-px opacity-0 -z-10"
-                onInput={(e) => { const val = (e.target as HTMLInputElement).value; if (val) { handleInput(val.slice(-1)); (e.target as HTMLInputElement).value = ''; } }}
-                onKeyDown={(e) => { if (e.key === 'Backspace') { handleInput('Backspace'); (e.target as HTMLInputElement).value = ''; } }}
+                onInput={(e) => {
+                    const val = (e.target as HTMLInputElement).value;
+                    console.log('[Input Debug] onInput fired, value:', val);
+
+                    // Process the keystroke
+                    if (val) {
+                        const char = val.slice(-1);
+                        console.log('[Input Debug] Processing character:', char);
+                        handleInput(char);
+                        (e.target as HTMLInputElement).value = '';
+                    }
+                }}
+                onKeyDown={(e) => {
+                    console.log('[Input Debug] onKeyDown fired, key:', e.key);
+                    if (e.key === 'Backspace') {
+                        handleInput('Backspace');
+                        (e.target as HTMLInputElement).value = '';
+                    }
+                }}
             />
         </div>
     );
