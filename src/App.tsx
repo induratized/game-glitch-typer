@@ -347,8 +347,8 @@ function App() {
 
     useEffect(() => {
         if (phase !== lastPhase) {
-            if (phase === 'FIRE' && !isMuted) speak("Critical Warning");
-            if (phase === 'WATER' && !isMuted) speak("System Unstable");
+            if (phase === 'FIRE' && !isMuted) speak("Oopsie Daisy!");
+            if (phase === 'WATER' && !isMuted) speak("It's gonna blow");
             setLastPhase(phase);
         }
     }, [phase, lastPhase, isMuted]);

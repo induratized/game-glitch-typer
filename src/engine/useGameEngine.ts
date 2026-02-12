@@ -6,7 +6,7 @@ export type GameState = 'idle' | 'playing' | 'crashed' | 'victory';
 
 interface UseGameEngineProps {
     initialLevel?: number;
-    onPlaySound?: (type: 'type' | 'error' | 'success' | 'crash') => void;
+    onPlaySound?: (type: 'type' | 'error' | 'success' | 'crash' | 'gameover') => void;
 }
 
 export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEngineProps) => {
@@ -298,7 +298,7 @@ export const useGameEngine = ({ initialLevel = 1, onPlaySound }: UseGameEnginePr
                 const next = prev - 1;
                 if (next <= 0) {
                     setGameState('crashed');
-                    onPlaySound?.('crash');
+                    onPlaySound?.('gameover');
                     if (timerRef.current) cancelAnimationFrame(timerRef.current);
                     return 0;
                 } else {

@@ -21,7 +21,7 @@ const BASE_VOLUME = 0.5;
 
 export const VOLUME_CONFIG = {
     VOICE: BASE_VOLUME,       // X = 0.5
-    SFX: BASE_VOLUME * 0.8,   // 0.4
+    SFX: BASE_VOLUME * 0.6,   // 0.4
     MUSIC: BASE_VOLUME * 0.25, // 0.25
 };
 
@@ -49,7 +49,7 @@ const createOscillator = (startFreq: number, type: OscillatorType, duration: num
     osc.stop(audioCtx.currentTime + duration);
 };
 
-export const playSound = (type: 'type' | 'error' | 'success' | 'crash') => {
+export const playSound = (type: 'type' | 'error' | 'success' | 'crash' | 'gameover') => {
     if (audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
@@ -77,6 +77,40 @@ export const playSound = (type: 'type' | 'error' | 'success' | 'crash') => {
                 }, i * 150);
             }
             break;
+        case 'gameover':
+            // "Crowd Boooo" effect
+            // Multiple low oscillators detuned slightly to sound like a crowd
+            const baseFreq = 150;
+            const detunes = [-15, -5, 0, 5, 15]; // Frequencies around base
+
+            detunes.forEach((detune, i) => {
+                // Mix of sawtooth (raspy) and triangle (hollow) for texture
+                const type = i % 2 === 0 ? 'sawtooth' : 'triangle';
+                const duration = 1; // Long boo
+
+                // Create manual oscillator here since createOscillator is too simple for this texture
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(baseFreq + detune, audioCtx.currentTime);
+                // Pitch bend down (disappointment)
+                osc.frequency.linearRampToValueAtTime(baseFreq + detune - 30, audioCtx.currentTime + duration);
+
+                const vol = VOLUME_CONFIG.SFX * 0.25; // Slightly quieter per voice to avoid clipping
+
+                gain.gain.setValueAtTime(0, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + 0.3); // Slow attack
+                gain.gain.linearRampToValueAtTime(vol, audioCtx.currentTime + duration - 0.5); // Sustain
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration); // Release
+
+                osc.connect(gain);
+                gain.connect(masterGain);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            });
+            break;
     }
 };
 
@@ -88,7 +122,7 @@ export const speak = (text: string) => {
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.volume = VOLUME_CONFIG.VOICE;
-    utterance.rate = 0.8; // Slower, more soothing and cautious
+    utterance.rate = 0.95; // Slower, more soothing and cautious
     utterance.pitch = 0.9; // Lower pitch, sounds slightly more "sad/fearful" but safe
 
     // Find a soothing female voice
