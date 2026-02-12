@@ -18,9 +18,8 @@ export const TypingArea = ({
     wordTimer,
     level,
     isLevelStarted,
-    showSpaceWarning,
     rotation
-}: TypingAreaProps & { isLevelStarted: boolean; showSpaceWarning: boolean; rotation: number }) => {
+}: TypingAreaProps & { isLevelStarted: boolean; rotation: number }) => {
 
     // Visible window of words (e.g., current - 2 to current + 8)
     const visibleStart = Math.max(0, currentIndex - 2);
@@ -53,6 +52,7 @@ export const TypingArea = ({
                         return (
                             <motion.div
                                 key={`${absoluteIndex}-${originalWord}`}
+                                id={isCurrent ? "current-word-capsule" : undefined}
                                 initial={{ opacity: 0, scale: 0.9, y: 10 }}
                                 animate={{
                                     opacity: 1,
@@ -72,37 +72,24 @@ export const TypingArea = ({
                             >
                                 <div className="relative z-20 flex items-center">
                                     {isCurrent ? (
-                                        <div className="relative">
-                                            {/* Mascot Speech Bubble */}
-                                            {showSpaceWarning && currentIndex < words.length - 1 && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.5, y: 10 }}
-                                                    animate={{ opacity: 1, scale: 1, y: -45 }}
-                                                    className="speech-bubble"
-                                                >
-                                                    PRESS SPACE! 🍬
-                                                </motion.div>
-                                            )}
-
-                                            <span className="flex">
-                                                {displayWord.split('').map((char, charIdx) => {
-                                                    const isTyped = charIdx < currentInput.length;
-                                                    const isTypingNow = charIdx === currentInput.length - 1;
-                                                    return (
-                                                        <span
-                                                            key={charIdx}
-                                                            className={clsx(
-                                                                "letter-pop-char font-mono",
-                                                                isTyped ? "text-candy-mint" : "text-white/40",
-                                                                isTypingNow && "pop"
-                                                            )}
-                                                        >
-                                                            {char}
-                                                        </span>
-                                                    );
-                                                })}
-                                            </span>
-                                        </div>
+                                        <span className="flex">
+                                            {displayWord.split('').map((char, charIdx) => {
+                                                const isTyped = charIdx < currentInput.length;
+                                                const isTypingNow = charIdx === currentInput.length - 1;
+                                                return (
+                                                    <span
+                                                        key={charIdx}
+                                                        className={clsx(
+                                                            "letter-pop-char font-mono",
+                                                            isTyped ? "text-candy-mint" : "text-white/40",
+                                                            isTypingNow && "pop"
+                                                        )}
+                                                    >
+                                                        {isTyped ? originalWord[charIdx] : char}
+                                                    </span>
+                                                );
+                                            })}
+                                        </span>
                                     ) : (
                                         <span className="font-mono">
                                             {isPast ? originalWord : displayWord}

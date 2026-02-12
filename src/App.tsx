@@ -51,6 +51,7 @@ function App() {
     const hiddenInputRef = useRef<HTMLInputElement>(null);
     const [popBadges, setPopBadges] = useState<{ id: number; text: string; type: any; x: number; y: number }[]>([]);
     const badgeIdRef = useRef(0);
+    const [bubblePosition, setBubblePosition] = useState({ top: '50%', left: '50%' });
 
     // App-wide settings
     const [settings, setSettings] = useState({
@@ -162,6 +163,15 @@ function App() {
         setMuted(isMuted);
         if (isMuted) cancelSpeech();
 
+        // Persistent focus handler for mobile keyboards
+        const handleFocus = () => {
+            if (hiddenInputRef.current) {
+                hiddenInputRef.current.focus({ preventScroll: true });
+            }
+        };
+        window.addEventListener('click', handleFocus);
+        window.addEventListener('touchstart', handleFocus);
+
         const handleInteraction = () => {
             if (!hasInteracted) {
                 resumeAudio();
@@ -176,7 +186,11 @@ function App() {
         if (!hasInteracted) {
             const events = ['click', 'keydown', 'mousedown', 'touchstart'];
             events.forEach(e => window.addEventListener(e, handleInteraction, { once: true }));
-            return () => events.forEach(e => window.removeEventListener(e, handleInteraction));
+            return () => {
+                window.removeEventListener('click', handleFocus);
+                window.removeEventListener('touchstart', handleFocus);
+                events.forEach(e => window.removeEventListener(e, handleInteraction));
+            };
         }
 
         // Handle settings-driven changes (when interacted)
@@ -188,6 +202,11 @@ function App() {
             audio.pause();
             isFadingRef.current = false;
         }
+
+        return () => {
+            window.removeEventListener('click', handleFocus);
+            window.removeEventListener('touchstart', handleFocus);
+        };
     }, [isMuted, settings.music, hasInteracted]);
 
     const handleStartGame = () => {
@@ -329,6 +348,38 @@ function App() {
         }
     }, [gameState, isMuted]);
 
+    // Calculate bubble position based on current word capsule
+    useEffect(() => {
+        if (showSpaceWarning && gameState === 'playing') {
+            let rafId: number;
+            const updatePosition = () => {
+                const capsule = document.getElementById('current-word-capsule');
+                if (capsule) {
+                    const rect = capsule.getBoundingClientRect();
+                    setBubblePosition({
+                        top: `${rect.top - 60}px`,
+                        left: `${rect.right + 12}px`
+                    });
+                }
+            };
+
+            const throttledUpdate = () => {
+                cancelAnimationFrame(rafId);
+                rafId = requestAnimationFrame(updatePosition);
+            };
+
+            updatePosition();
+            window.addEventListener('resize', throttledUpdate);
+            window.addEventListener('scroll', throttledUpdate, true); // Capture scroll events too
+
+            return () => {
+                window.removeEventListener('resize', throttledUpdate);
+                window.removeEventListener('scroll', throttledUpdate, true);
+                cancelAnimationFrame(rafId);
+            };
+        }
+    }, [showSpaceWarning, gameState, wordIndex]);
+
     return (
         <div className={clsx(
             "min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-1000 relative overflow-hidden app-playful",
@@ -450,7 +501,7 @@ function App() {
 
                     {gameState === 'playing' && (
                         <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
-                            <TypingArea words={fullText} currentIndex={wordIndex} currentInput={currentInput} getDisplayWord={getDisplayWord} wordTimer={wordTimer} level={level} isLevelStarted={isLevelStarted} showSpaceWarning={showSpaceWarning} rotation={rotation} />
+                            <TypingArea words={fullText} currentIndex={wordIndex} currentInput={currentInput} getDisplayWord={getDisplayWord} wordTimer={wordTimer} level={level} isLevelStarted={isLevelStarted} rotation={rotation} />
                         </motion.div>
                     )}
 
@@ -480,6 +531,29 @@ function App() {
                 ))}
             </AnimatePresence>
 
+            {/* Global Space Warning - Positioned Between Words */}
+            <AnimatePresence>
+                {showSpaceWarning && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.2 }}
+                        className="speech-bubble"
+                        style={{
+                            position: 'fixed',
+                            top: bubblePosition.top,
+                            left: bubblePosition.left,
+                            transform: 'translateX(-50%)',
+                            zIndex: 10000,
+                            pointerEvents: 'none'
+                        }}
+                    >
+                        PRESS SPACE
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={settings} onSettingsChange={handleSettingsChange} />
 
             <CandyModal
@@ -498,9 +572,16 @@ function App() {
                 onCancel={() => setConfirmRestart(false)}
             />
 
-            <input ref={hiddenInputRef} type="text" inputMode="text" autoComplete="off" spellCheck="false" className="fixed -bottom-full opacity-0 pointer-events-none"
+            <input
+                ref={hiddenInputRef}
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                spellCheck="false"
+                className="fixed top-0 left-0 w-px h-px opacity-0 -z-10"
                 onInput={(e) => { const val = (e.target as HTMLInputElement).value; if (val) { handleInput(val.slice(-1)); (e.target as HTMLInputElement).value = ''; } }}
-                onKeyDown={(e) => { if (e.key === 'Backspace') { handleInput('Backspace'); (e.target as HTMLInputElement).value = ''; } }} />
+                onKeyDown={(e) => { if (e.key === 'Backspace') { handleInput('Backspace'); (e.target as HTMLInputElement).value = ''; } }}
+            />
         </div>
     );
 }
