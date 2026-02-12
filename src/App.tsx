@@ -95,7 +95,7 @@ function App() {
     const isFadingRef = useRef(false);
 
     const startMusicFadeIn = (audio: HTMLAudioElement, forceMusic?: boolean) => {
-        const targetVolume = 0.45;
+        const targetVolume = 0.2;
         const fadeDuration = 3000;
         const isMusicEnabled = forceMusic !== undefined ? forceMusic : settings.music;
 
