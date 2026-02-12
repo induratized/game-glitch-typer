@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
+import { useState, useEffect, memo } from 'react';
 
 interface TypingAreaProps {
     words: string[];
@@ -10,7 +11,7 @@ interface TypingAreaProps {
     level: number;
 }
 
-export const TypingArea = ({
+const TypingAreaComponent = ({
     words,
     currentIndex,
     currentInput,
@@ -20,11 +21,21 @@ export const TypingArea = ({
     isLevelStarted,
     rotation
 }: TypingAreaProps & { isLevelStarted: boolean; rotation: number }) => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Visible window of words (e.g., current - 2 to current + 8)
     const visibleStart = Math.max(0, currentIndex - 2);
     const visibleEnd = Math.min(words.length, currentIndex + 8);
     const visibleWords = words.slice(visibleStart, visibleEnd);
+
+    // Mobile: use plain div with CSS transitions, Desktop: use framer-motion
+    const WordTile = isMobile ? 'div' : motion.div;
 
     return (
         <motion.div
@@ -50,24 +61,27 @@ export const TypingArea = ({
                         const displayWord = getDisplayWord(originalWord, absoluteIndex);
 
                         return (
-                            <motion.div
+                            <WordTile
                                 key={`${absoluteIndex}-${originalWord}`}
                                 id={isCurrent ? "current-word-capsule" : undefined}
-                                initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                animate={{
-                                    opacity: 1,
-                                    scale: isCurrent ? 1.1 : (isPast ? 0.9 : 1),
-                                    y: 0,
-                                }}
-                                exit={{
-                                    opacity: 0,
-                                    scale: 0.8,
-                                    y: -20,
-                                    transition: { duration: 0.2 }
-                                }}
+                                {...(!isMobile && {
+                                    initial: { opacity: 0, scale: 0.9, y: 10 },
+                                    animate: {
+                                        opacity: 1,
+                                        scale: isCurrent ? 1.1 : (isPast ? 0.9 : 1),
+                                        y: 0,
+                                    },
+                                    exit: {
+                                        opacity: 0,
+                                        scale: 0.8,
+                                        y: -20,
+                                        transition: { duration: 0.2 }
+                                    }
+                                })}
                                 className={clsx(
-                                    "candy-tile tile-gloss",
-                                    isCurrent ? "current" : (isPast ? "past" : "")
+                                    "candy-tile tile-gloss transition-all duration-150",
+                                    isCurrent ? "current scale-110" : (isPast ? "past scale-90" : ""),
+                                    isMobile && "opacity-100"
                                 )}
                             >
                                 <div className="relative z-20 flex items-center">
@@ -112,7 +126,7 @@ export const TypingArea = ({
                                         />
                                     </div>
                                 )}
-                            </motion.div>
+                            </WordTile>
                         );
                     })}
                 </AnimatePresence>
@@ -120,3 +134,6 @@ export const TypingArea = ({
         </motion.div>
     );
 };
+
+// Wrap in React.memo to prevent unnecessary re-renders
+export const TypingArea = memo(TypingAreaComponent);

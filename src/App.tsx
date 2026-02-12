@@ -95,15 +95,33 @@ function App() {
     const isFadingRef = useRef(false);
 
     const startMusicFadeIn = (audio: HTMLAudioElement) => {
+        console.log('[Audio Debug] startMusicFadeIn called', {
+            musicEnabled: settings.music,
+            isMuted,
+            audioPaused: audio.paused,
+            audioVolume: audio.volume,
+            isFading: isFadingRef.current
+        });
+
         // Stop if music is disabled or muted
-        if (!settings.music || isMuted) return;
+        if (!settings.music || isMuted) {
+            console.log('[Audio Debug] Music disabled or muted, skipping');
+            return;
+        }
 
         // If already playing and volume is good, no need to start again
-        if (!audio.paused && audio.volume > 0.4 && !isFadingRef.current) return;
+        if (!audio.paused && audio.volume > 0.4 && !isFadingRef.current) {
+            console.log('[Audio Debug] Already playing with good volume');
+            return;
+        }
 
         // If already fading, let it finish unless it's paused
-        if (isFadingRef.current && !audio.paused) return;
+        if (isFadingRef.current && !audio.paused) {
+            console.log('[Audio Debug] Already fading');
+            return;
+        }
 
+        console.log('[Audio Debug] Attempting to play audio');
         const playPromise = audio.play();
 
         const doFade = () => {
@@ -115,9 +133,12 @@ function App() {
             const targetVolume = 0.45;
             const start = performance.now();
 
+            console.log('[Audio Debug] Starting fade animation');
+
             const fade = (now: number) => {
                 // If music was paused or changed during fade, stop the animation
                 if (audio.paused || !settings.music || isMuted) {
+                    console.log('[Audio Debug] Fade stopped:', { paused: audio.paused, music: settings.music, muted: isMuted });
                     isFadingRef.current = false;
                     return;
                 }
@@ -126,9 +147,19 @@ function App() {
                 const progress = Math.min(elapsed / fadeDuration, 1);
                 audio.volume = progress * targetVolume;
 
+                // Log every 500ms
+                if (Math.floor(elapsed / 500) !== Math.floor((elapsed - 16) / 500)) {
+                    console.log('[Audio Debug] Fade progress:', {
+                        progress: (progress * 100).toFixed(1) + '%',
+                        volume: audio.volume.toFixed(3),
+                        paused: audio.paused
+                    });
+                }
+
                 if (progress < 1) {
                     requestAnimationFrame(fade);
                 } else {
+                    console.log('[Audio Debug] Fade complete, final volume:', audio.volume);
                     isFadingRef.current = false;
                 }
             };
@@ -136,9 +167,12 @@ function App() {
         };
 
         if (playPromise !== undefined) {
-            playPromise.then(doFade).catch(() => {
+            playPromise.then(() => {
+                console.log('[Audio Debug] Audio play() succeeded');
+                doFade();
+            }).catch((error) => {
+                console.error('[Audio Debug] Audio play() failed:', error);
                 isFadingRef.current = false;
-                console.log("Autoplay blocked, waiting for interaction.");
             });
         } else {
             doFade();
@@ -165,7 +199,8 @@ function App() {
 
         // Persistent focus handler for mobile keyboards
         const handleFocus = () => {
-            if (hiddenInputRef.current) {
+            // Only focus if playing and settings closed
+            if (gameState === 'playing' && !isSettingsOpen && hiddenInputRef.current) {
                 hiddenInputRef.current.focus({ preventScroll: true });
             }
         };
@@ -173,12 +208,28 @@ function App() {
         window.addEventListener('touchstart', handleFocus);
 
         const handleInteraction = () => {
+            console.log('[Audio Debug] User interaction detected');
+
+            // CRITICAL: Play audio FIRST, before any state updates
+            // This ensures audio.play() is called synchronously in the user gesture handler
+            if (!hasInteracted && settings.music && !isMuted && audio.paused) {
+                console.log('[Audio Debug] Starting music on first interaction (BEFORE state update)');
+                startMusicFadeIn(audio);
+            }
+
             if (!hasInteracted) {
+                console.log('[Audio Debug] First interaction, resuming audio context');
                 resumeAudio();
                 setHasInteracted(true);
-            }
-            if (settings.music && !isMuted && audio.paused) {
+            } else if (settings.music && !isMuted && audio.paused) {
+                console.log('[Audio Debug] Starting music fade-in');
                 startMusicFadeIn(audio);
+            } else {
+                console.log('[Audio Debug] Music not started:', {
+                    musicEnabled: settings.music,
+                    isMuted,
+                    audioPaused: audio.paused
+                });
             }
         };
 
@@ -193,12 +244,13 @@ function App() {
             };
         }
 
-        // Handle settings-driven changes (when interacted)
-        if (settings.music && !isMuted) {
+        // Handle settings-driven changes (when already interacted)
+        if (hasInteracted && settings.music && !isMuted) {
             if (audio.paused && !isFadingRef.current) {
+                console.log('[Audio Debug] Starting music from useEffect (settings changed)');
                 startMusicFadeIn(audio);
             }
-        } else {
+        } else if (hasInteracted) {
             audio.pause();
             isFadingRef.current = false;
         }
@@ -382,7 +434,7 @@ function App() {
 
     return (
         <div className={clsx(
-            "min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-1000 relative overflow-hidden app-playful",
+            "min-h-screen flex flex-col items-center p-4 transition-colors duration-1000 relative overflow-hidden app-playful",
             phase === 'FIRE' ? "bg-red-950" : phase === 'WATER' ? "bg-slate-900" : "bg-slate-950"
         )}>
 
@@ -401,32 +453,57 @@ function App() {
             </AnimatePresence>
 
             {/* HUD */}
-            <div className="fixed top-2 left-2 right-2 md:top-6 md:left-12 md:right-12 z-40 flex justify-between items-start pointer-events-none">
-                <div className="flex flex-col md:flex-row gap-2 md:gap-3 pointer-events-auto">
-                    <div className="hud-badge py-1 px-3 md:py-2 md:px-4">
+            {/* Mobile HUD (Stats Only) */}
+            <div className="md:hidden fixed top-4 left-0 right-0 z-40 flex flex-col items-center pointer-events-none">
+                <div className="flex justify-center items-center gap-5 w-full px-4 pointer-events-auto">
+                    <div className="hud-badge transform scale-150">
                         <span className="badge-icon">💎</span>
-                        <span className="score-level-font text-sm md:text-lg">{score.toLocaleString()}</span>
+                        <span className="score-level-font text-sm">{score.toLocaleString()}</span>
                     </div>
-                    <div className={clsx("hud-badge py-1 px-3 md:py-2 md:px-4", isLevelStarted && "level-up")}>
+                    <div className={clsx("hud-badge transform scale-150", isLevelStarted && "level-up")}>
+                        <span className="badge-icon">🥇</span>
+                        <span className="score-level-font text-sm">{level}</span>
+                    </div>
+                    <div className="hud-badge transform scale-150">
+                        <span className="badge-icon">❤️</span>
+                        <span className="score-level-font text-sm">{lives}</span>
+                    </div>
+                    <div className={clsx("hud-badge transform scale-150", combo > 20 && "ring-2 ring-candy-pink")}>
+                        <span className="badge-icon">🔥</span>
+                        <span className="score-level-font text-sm">x{combo}</span>
+                    </div>
+                </div>
+                {phase === 'FIRE' && (
+                    <div className="hud-badge inline-block px-4 text-xs mt-10 fire-zone pointer-events-auto">PHASE: {phase}</div>
+                )}
+            </div>
+
+            {/* Desktop HUD */}
+            <div className="hidden md:flex fixed top-6 left-12 right-12 z-40 justify-between items-start pointer-events-none">
+                <div className="flex flex-row gap-3 pointer-events-auto">
+                    <div className="hud-badge py-2 px-4">
+                        <span className="badge-icon">💎</span>
+                        <span className="score-level-font text-lg">{score.toLocaleString()}</span>
+                    </div>
+                    <div className={clsx("hud-badge py-2 px-4", isLevelStarted && "level-up")}>
                         <span className="badge-icon">⭐</span>
-                        <span className="score-level-font text-sm md:text-lg">Lv {level}</span>
+                        <span className="score-level-font text-lg">Lv {level}</span>
                     </div>
                 </div>
 
-                <div className="hidden lg:flex flex-col items-center">
-                    <h1 className="hero-title">GLITCH TYPER</h1>
-                    <div className={clsx("hud-badge px-4 text-xs mt-2", phase === 'FIRE' && "fire-zone")}>PHASE: {phase}</div>
+                <div className="flex flex-col items-center">
+                    <div className={clsx("hud-badge px-4 text-xs", phase === 'FIRE' && "fire-zone")}>PHASE: {phase}</div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-2 md:gap-3 items-end md:items-center pointer-events-auto">
+                <div className="flex flex-row gap-3 items-center pointer-events-auto">
                     <div className="flex gap-2">
-                        <div className="hud-badge py-1 px-3 md:py-2 md:px-4">
+                        <div className="hud-badge py-2 px-4">
                             <span className="badge-icon">❤️</span>
-                            <span className="score-level-font text-sm md:text-lg">{lives}</span>
+                            <span className="score-level-font text-lg">{lives}</span>
                         </div>
-                        <div className={clsx("hud-badge py-1 px-3 md:py-2 md:px-4", combo > 20 && "ring-2 ring-candy-pink")}>
+                        <div className={clsx("hud-badge py-2 px-4", combo > 20 && "ring-2 ring-candy-pink")}>
                             <span className="badge-icon">🔥</span>
-                            <span className="score-level-font text-sm md:text-lg">x{combo}</span>
+                            <span className="score-level-font text-lg">x{combo}</span>
                         </div>
                     </div>
                 </div>
@@ -434,7 +511,7 @@ function App() {
 
             {/* Bottom Right Controls */}
             <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 flex items-center gap-3">
-                {gameState === 'playing' && (
+                {gameState !== 'idle' && (
                     <>
                         <motion.button
                             onClick={() => setConfirmHome(true)}
@@ -456,16 +533,6 @@ function App() {
                         </motion.button>
                     </>
                 )}
-                {gameState === 'idle' && (
-                    <motion.button
-                        onClick={() => resetToHome()}
-                        className="settings-button-poppy w-10 h-10 md:w-14 md:h-14 text-cream"
-                        whileHover={{ scale: 1.1, y: -5 }}
-                        whileTap={{ scale: 0.9 }}
-                    >
-                        <HomeIcon />
-                    </motion.button>
-                )}
                 <motion.button
                     onClick={() => setIsSettingsOpen(true)}
                     className="settings-button-poppy w-12 h-12 md:w-16 md:h-16"
@@ -477,82 +544,95 @@ function App() {
                 </motion.button>
             </div>
 
-            {/* Mobile Title */}
-            <div className="md:hidden absolute top-20 text-center z-30 w-full pointer-events-none">
-                <h1 className="hero-title text-4xl">GLITCH TYPER</h1>
-            </div>
-
-            {/* Main Game Area */}
-            <div className="playfield-container mt-24 md:mt-24 w-full max-w-3xl flex flex-col gap-8 items-center z-10">
-                <div className="flex items-center gap-6 w-full px-4">
-                    <Mascot size={80} mood={mood} variant="lollipop" />
-                    <GlitchMeter value={glitchMeter} />
-                </div>
-
-                <AnimatePresence mode="wait">
+            {/* Main Game Area Container */}
+            <div className="w-full flex flex-col items-center pt-[84px] px-4 z-10 gap-5">
+                {/* Header (Normal Flow) */}
+                <AnimatePresence>
                     {gameState === 'idle' && (
-                        <motion.div key="idle" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="text-center p-8 bg-white/5 rounded-3xl backdrop-blur-md">
-                            <p className="text-2xl text-candy-hot-pink mb-6 font-bold">READY TO TYP_?</p>
-                            <button onClick={handleStartGame} className="px-12 py-4 bg-gem-emerald text-candy-cream font-black rounded-2xl shadow-lg transform hover:scale-105 transition-all text-xl">
-                                [&nbsp;&nbsp;PRESS ENTER&nbsp;&nbsp;]
-                            </button>
-                        </motion.div>
-                    )}
-
-                    {gameState === 'playing' && (
-                        <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
-                            <TypingArea words={fullText} currentIndex={wordIndex} currentInput={currentInput} getDisplayWord={getDisplayWord} wordTimer={wordTimer} level={level} isLevelStarted={isLevelStarted} rotation={rotation} />
-                        </motion.div>
-                    )}
-
-                    {gameState === 'crashed' && (
-                        <motion.div key="crashed" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-12 bg-black/80 rounded-[40px] border-4 border-red-500 shadow-2xl backdrop-blur-xl">
-                            <div className="text-5xl font-black text-red-500 mb-6">SYSTEM_CRASH</div>
-                            <div className="text-6xl font-black text-white mb-8">{score.toLocaleString()}</div>
-                            <button onClick={handleStartGame} className="px-10 py-4 bg-red-600 text-white font-black rounded-xl text-xl hover:bg-red-500 transition-all">TRY AGAIN</button>
-                        </motion.div>
-                    )}
-
-                    {gameState === 'victory' && (
-                        <motion.div key="victory" initial={{ opacity: 0, scale: 1.2 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-16 bg-gradient-to-br from-candy-mint/90 to-candy-pink/90 rounded-[50px] shadow-[0_0_100px_rgba(122,246,217,0.5)] border-4 border-white backdrop-blur-2xl">
-                            <h2 className="text-6xl font-black text-white mb-4 drop-shadow-lg">VICTORY_!</h2>
-                            <p className="text-xl text-white/90 mb-10 font-bold">Glitch cleared. System Pure.</p>
-                            <div className="text-7xl font-black text-white mb-10">{score.toLocaleString()}</div>
-                            <button onClick={handleStartGame} className="px-12 py-5 bg-white text-candy-pink font-black rounded-3xl text-2xl shadow-xl hover:scale-110 transition-transform">PLAY AGAIN</button>
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className="text-center w-full px-5"
+                        >
+                            <h1 className="hero-title !text-[24vw] md:!text-[12vw] leading-[0.8] text-candy-mint drop-shadow-md">
+                                GLITCH<br />TYPER
+                            </h1>
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Playfield Container */}
+                <div className="playfield-container w-full max-w-3xl flex flex-col gap-8 items-center transition-all duration-700">
+                    <div className="flex items-center justify-center w-full px-4">
+                        {gameState !== 'playing' && <Mascot size={80} mood={mood} variant="lollipop" />}
+                        {gameState === 'playing' && <GlitchMeter value={glitchMeter} />}
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        {gameState === 'idle' && (
+                            <motion.div key="idle" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.1 }} className="text-center p-8 bg-white/5 rounded-3xl backdrop-blur-md">
+                                <p className="text-2xl text-candy-hot-pink mb-6 font-bold">READY TO TYP_?</p>
+                                <button onClick={handleStartGame} className="px-12 py-4 bg-gem-emerald text-candy-cream font-black rounded-2xl shadow-lg transform hover:scale-105 transition-all text-xl">
+                                    [&nbsp;&nbsp;PRESS ENTER&nbsp;&nbsp;]
+                                </button>
+                            </motion.div>
+                        )}
+
+                        {gameState === 'playing' && (
+                            <motion.div key="playing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full">
+                                <TypingArea words={fullText} currentIndex={wordIndex} currentInput={currentInput} getDisplayWord={getDisplayWord} wordTimer={wordTimer} level={level} isLevelStarted={isLevelStarted} rotation={rotation} />
+                            </motion.div>
+                        )}
+
+                        {gameState === 'crashed' && (
+                            <motion.div key="crashed" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-12 bg-black/80 rounded-[40px] border-4 border-red-500 shadow-2xl backdrop-blur-xl">
+                                <div className="text-5xl font-black text-red-500 mb-6">SYSTEM_CRASH</div>
+                                <div className="text-6xl font-black text-white mb-8">{score.toLocaleString()}</div>
+                                <button onClick={handleStartGame} className="px-10 py-4 bg-red-600 text-white font-black rounded-xl text-xl hover:bg-red-500 transition-all">TRY AGAIN</button>
+                            </motion.div>
+                        )}
+
+                        {gameState === 'victory' && (
+                            <motion.div key="victory" initial={{ opacity: 0, scale: 1.2 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-16 bg-gradient-to-br from-candy-mint/90 to-candy-pink/90 rounded-[50px] shadow-[0_0_100px_rgba(122,246,217,0.5)] border-4 border-white backdrop-blur-2xl">
+                                <h2 className="text-6xl font-black text-white mb-4 drop-shadow-lg">VICTORY_!</h2>
+                                <div className="text-8xl font-black text-white mb-8 score-level-font">{score.toLocaleString()}</div>
+                                <button onClick={handleStartGame} className="px-12 py-5 bg-white text-candy-hot-pink font-black rounded-2xl text-2xl shadow-xl hover:scale-110 transition-all">NEXT_LEVEL</button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Pop Badges */}
+                    <AnimatePresence>
+                        {popBadges.map(badge => (
+                            <PopBadge key={badge.id} {...badge} onComplete={() => setPopBadges(prev => prev.filter(b => b.id !== badge.id))} />
+                        ))}
+                    </AnimatePresence>
+
+                    {/* Global Space Warning - Positioned Between Words */}
+                    <AnimatePresence>
+                        {showSpaceWarning && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ duration: 0.2 }}
+                                className="speech-bubble"
+                                style={{
+                                    position: 'fixed',
+                                    top: bubblePosition.top,
+                                    left: bubblePosition.left,
+                                    transform: 'translateX(-50%)',
+                                    zIndex: 10000,
+                                    pointerEvents: 'none'
+                                }}
+                            >
+                                PRESS SPACE
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
             </div>
-
-            {/* Pop Badges */}
-            <AnimatePresence>
-                {popBadges.map(badge => (
-                    <PopBadge key={badge.id} {...badge} onComplete={() => setPopBadges(prev => prev.filter(b => b.id !== badge.id))} />
-                ))}
-            </AnimatePresence>
-
-            {/* Global Space Warning - Positioned Between Words */}
-            <AnimatePresence>
-                {showSpaceWarning && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.5 }}
-                        transition={{ duration: 0.2 }}
-                        className="speech-bubble"
-                        style={{
-                            position: 'fixed',
-                            top: bubblePosition.top,
-                            left: bubblePosition.left,
-                            transform: 'translateX(-50%)',
-                            zIndex: 10000,
-                            pointerEvents: 'none'
-                        }}
-                    >
-                        PRESS SPACE
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={settings} onSettingsChange={handleSettingsChange} />
 

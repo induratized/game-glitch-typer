@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Mascot from "./Mascot";
 
 type MascotSpec = {
@@ -40,12 +40,46 @@ export default function RoamingMascots({
     const rafRef = useRef<number | null>(null);
     const stateRef = useRef<any>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const [activeSpecs, setActiveSpecs] = useState(specs);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const shuffleArray = <T,>(array: T[]): T[] => {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        };
+
+        const handleResize = () => {
+            const isSmallDevice = window.innerWidth < 640;
+            const isMobileDevice = window.innerWidth < 768;
+            setIsMobile(isMobileDevice);
+
+            // Don't set activeSpecs on mobile since we won't render
+            if (!isMobileDevice) {
+                setActiveSpecs(isSmallDevice ? shuffleArray(specs).slice(0, 4) : specs);
+            }
+        };
+
+        handleResize(); // Initial check
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [specs]);
+
+    // Skip rendering entirely on mobile
+    if (isMobile) {
+        return null;
+    }
 
     useEffect(() => {
         const w = () => window.innerWidth;
         const h = () => window.innerHeight;
+        const isMobile = window.innerWidth < 768;
 
-        const mascots = specs.map((s) => {
+        const mascots = activeSpecs.map((s) => {
             const radius = s.size / 2;
             return {
                 id: s.id,
@@ -61,6 +95,23 @@ export default function RoamingMascots({
 
         stateRef.current = { mascots, last: performance.now() };
 
+        // Skip physics loop on mobile - render static positions only
+        if (isMobile) {
+            if (containerRef.current) {
+                const children = Array.from(
+                    containerRef.current.children,
+                ) as HTMLElement[];
+                for (let i = 0; i < mascots.length; i++) {
+                    const el = children[i];
+                    if (!el) continue;
+                    const m = mascots[i];
+                    el.style.transform = `translate(${m.x - m.radius}px, ${m.y - m.radius}px)`;
+                }
+            }
+            return; // Exit early - no animation loop on mobile
+        }
+
+        // Desktop: full physics animation
         const tick = (t: number) => {
             const s = stateRef.current;
             if (!s) return;
@@ -167,14 +218,14 @@ export default function RoamingMascots({
             window.removeEventListener("resize", onResize);
             stateRef.current = null;
         };
-    }, [specs]);
+    }, [activeSpecs]);
 
     return (
         <div
             ref={containerRef}
             className="absolute inset-0 pointer-events-none overflow-hidden"
         >
-            {specs.map((d) => (
+            {activeSpecs.map((d) => (
                 <div
                     key={d.id}
                     style={{ position: "absolute", left: 0, top: 0 }}
