@@ -12,7 +12,7 @@ type Variant =
     | "cupcake"
     | "soda";
 
-export type Mood = "idle" | "happy" | "stressed" | "dizzy" | "victory";
+export type Mood = "idle" | "happy" | "stressed" | "dizzy" | "victory" | "sad";
 
 const VARIANT_EMOJI: Record<Variant, string> = {
     lollipop: "🍭",
@@ -32,6 +32,7 @@ const MOOD_EMOJI: Record<Mood, string> = {
     stressed: "💢",
     dizzy: "😵‍💫",
     victory: "👑",
+    sad: "😭",
 };
 
 export const Mascot = ({
@@ -74,6 +75,13 @@ export const Mascot = ({
                     scale: [1, 1.5, 1],
                     rotate: [0, 360],
                     transition: { duration: 1, repeat: Infinity }
+                };
+            case "sad":
+                return {
+                    y: [0, 10, 0],
+                    rotate: [-10, 10, -10],
+                    scale: [1, 0.9, 1],
+                    transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
                 };
             default:
                 return {

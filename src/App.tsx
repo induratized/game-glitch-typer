@@ -21,10 +21,7 @@ const HomeIcon = () => (
 
 const RestartIcon = () => (
     <svg viewBox="0 0 24 24" fill="none" className="w-full h-full p-2" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 4V10H7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M20.49 15L19 19H15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M3.51 9C4.517 7.053 6.139 5.437 8.114 4.41C10.089 3.383 12.339 3 14.506 3.31C16.673 3.62 18.665 4.61 20.165 6.12L23 9M1 15L3.835 17.88C5.335 19.39 7.327 20.38 9.494 20.69C11.661 21 13.911 20.617 15.886 19.59C17.861 18.563 19.483 16.947 20.49 15"
-            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
@@ -270,7 +267,7 @@ function App() {
 
     // Mascot Mood Logic
     const mood: Mood = gameState === 'victory' ? 'victory' :
-        gameState === 'crashed' ? 'dizzy' :
+        gameState === 'crashed' ? 'sad' :
             phase === 'FIRE' ? 'stressed' :
                 combo > 20 ? 'happy' : 'idle';
 
@@ -439,9 +436,9 @@ function App() {
                         <span className="score-level-font text-sm">x{combo}</span>
                     </div>
                 </div>
-                {phase === 'FIRE' && (
+                {/* {phase === 'FIRE' && (
                     <div className="hud-badge inline-block px-4 text-xs mt-10 fire-zone pointer-events-auto">PHASE: {phase}</div>
-                )}
+                )} */}
             </div>
 
             {/* Desktop HUD */}
@@ -531,7 +528,7 @@ function App() {
                 {/* Playfield Container */}
                 <div className="playfield-container w-full max-w-3xl flex flex-col gap-8 items-center transition-all duration-700">
                     <div className="flex items-center justify-center w-full px-4">
-                        {gameState !== 'playing' && <Mascot size={80} mood={mood} variant="lollipop" />}
+                        {gameState !== 'playing' && gameState !== 'crashed' && <Mascot size={80} mood={mood} variant="lollipop" />}
                         {gameState === 'playing' && <GlitchMeter value={glitchMeter} />}
                     </div>
 
@@ -565,10 +562,37 @@ function App() {
                         )}
 
                         {gameState === 'crashed' && (
-                            <motion.div key="crashed" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-12 bg-black/80 rounded-[40px] border-4 border-red-500 shadow-2xl backdrop-blur-xl">
-                                <div className="text-5xl font-black text-red-500 mb-6">SYSTEM_CRASH</div>
-                                <div className="text-6xl font-black text-white mb-8">{score.toLocaleString()}</div>
-                                <button onClick={handleStartGame} className="px-10 py-4 bg-red-600 text-white font-black rounded-xl text-xl hover:bg-red-500 transition-all">TRY AGAIN</button>
+                            <motion.div
+                                key="crashed"
+                                initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
+                                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                                className="text-center p-10 bg-gradient-to-b from-red-500 to-rose-700 rounded-[50px] border-8 border-white shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_8px_rgba(255,255,255,0.2)] max-w-sm w-full mx-auto relative overflow-hidden"
+                            >
+                                {/* Decorative Glare */}
+                                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+
+                                <div className="relative z-10 flex flex-col items-center">
+                                    <Mascot size={120} mood="sad" variant="lollipop" className="mb-6 drop-shadow-2xl" />
+
+                                    <div className="text-5xl font-black text-white mb-2 drop-shadow-[0_4px_0_rgba(185,28,28,0.8)] tracking-wide">
+                                        OH NO!
+                                    </div>
+                                    <div className="text-xl font-black text-red-100 mb-6 uppercase tracking-widest">
+                                        Game Over
+                                    </div>
+
+                                    <div className="bg-black/20 rounded-2xl p-4 w-full mb-8 backdrop-blur-sm border-2 border-white/10">
+                                        <div className="text-white/80 text-sm font-bold uppercase mb-1">Final Score</div>
+                                        <div className="text-6xl font-black text-white drop-shadow-md score-level-font">{score.toLocaleString()}</div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleStartGame}
+                                        className="w-full py-5 bg-white text-red-600 font-black rounded-3xl text-2xl shadow-[0_8px_0_#e5e5e5,0_15px_20px_rgba(0,0,0,0.2)] hover:scale-105 hover:shadow-[0_10px_0_#e5e5e5,0_20px_25px_rgba(0,0,0,0.3)] active:scale-95 active:shadow-[0_4px_0_#e5e5e5,0_8px_10px_rgba(0,0,0,0.2)] transition-all transform"
+                                    >
+                                        TRY AGAIN
+                                    </button>
+                                </div>
                             </motion.div>
                         )}
 

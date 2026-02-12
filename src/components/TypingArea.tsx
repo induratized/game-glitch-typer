@@ -46,8 +46,8 @@ const TypingAreaComponent = ({
             {/* Start Prompt Overlay */}
             {!isLevelStarted && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-50 backdrop-blur-md pointer-events-none">
-                    <div className="text-candy-mint font-bold text-2xl animate-pulse tracking-[0.2em] transform -rotate-2">
-                        [ TYPE TO START LEVEL {level} ]
+                    <div className="text-candy-mint font-bold text-xl animate-pulse tracking-[0.2em]">
+                        TYPE TO START: LEVEL {level}
                     </div>
                 </div>
             )}
