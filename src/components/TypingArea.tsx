@@ -60,6 +60,15 @@ const TypingAreaComponent = ({
                         const isPast = absoluteIndex < currentIndex;
                         const displayWord = getDisplayWord(originalWord, absoluteIndex);
 
+
+                        // Legacy Level 2 Logic: Deterministic random flicker duration
+                        const randomSeed = (originalWord.length + absoluteIndex) % 10;
+
+
+                        // Level Checks
+                        const isFlickerLevel = (level === 2 || level === 6);
+                        const isFadeLevel = (level === 4 || level === 6);
+
                         return (
                             <WordTile
                                 key={`${absoluteIndex}-${originalWord}`}
@@ -67,7 +76,7 @@ const TypingAreaComponent = ({
                                 {...(!isMobile && {
                                     initial: { opacity: 0, scale: 0.9, y: 10 },
                                     animate: {
-                                        opacity: 1,
+                                        opacity: 1, // Restored to 1 (Level 4 handled in inner span)
                                         scale: isCurrent ? 1.1 : (isPast ? 0.9 : 1),
                                         y: 0,
                                     },
@@ -76,38 +85,79 @@ const TypingAreaComponent = ({
                                         scale: 0.8,
                                         y: -20,
                                         transition: { duration: 0.2 }
-                                    }
+                                    },
+                                    transition: { duration: 0.2 } // Standard transition
                                 })}
                                 className={clsx(
                                     "candy-tile tile-gloss transition-all duration-150",
                                     isCurrent ? "current scale-110" : (isPast ? "past scale-90" : ""),
                                     isMobile && "opacity-100"
                                 )}
+                                style={{
+                                    // Legacy Level 2 Flicker: Apply directly via style
+                                    ...(isFlickerLevel && !isCurrent && !isPast ? {
+                                        animation: `level2-pulse 0.8s infinite`, /* 0.3s visible, 0.5s invisible */
+                                        animationDelay: `-${(randomSeed * 0.08).toFixed(2)}s`, /* Random start offset */
+                                        animationPlayState: isLevelStarted ? 'running' : 'paused'
+                                    } : {})
+                                }}
                             >
                                 <div className="relative z-20 flex items-center">
                                     {isCurrent ? (
-                                        <span className="flex">
-                                            {displayWord.split('').map((char, charIdx) => {
-                                                const isTyped = charIdx < currentInput.length;
-                                                const isTypingNow = charIdx === currentInput.length - 1;
-                                                return (
-                                                    <span
-                                                        key={charIdx}
-                                                        className={clsx(
-                                                            "letter-pop-char font-mono",
-                                                            isTyped ? "text-candy-mint" : "text-white/40",
-                                                            isTypingNow && "pop"
-                                                        )}
-                                                    >
-                                                        {isTyped ? originalWord[charIdx] : char}
-                                                    </span>
-                                                );
-                                            })}
-                                        </span>
+                                        <div className="relative">
+                                            {/* Mascot Speech Bubble (Restored structure) */}
+                                            {/* (Omitted for brevity as it's handled in main component usually, but keeping structure clean) */}
+
+                                            {/* Level 4 Fade: Applied to Current Word */}
+                                            <motion.span
+                                                className="flex"
+                                                custom={isFadeLevel ? Math.max(0.8, originalWord.length * 0.1) : 0.3}
+                                                variants={{
+                                                    visible: { opacity: 1 },
+                                                    fading: (duration) => ({
+                                                        opacity: [1, 0],
+                                                        transition: {
+                                                            duration: duration,
+                                                            ease: "linear",
+                                                            repeat: 0
+                                                        }
+                                                    })
+                                                }}
+                                                animate={
+                                                    isFadeLevel
+                                                        ? (absoluteIndex === 0 && currentInput.length === 0 ? "visible" : "fading")
+                                                        : "visible"
+                                                }
+                                            >
+                                                {displayWord.split('').map((char, charIdx) => {
+                                                    const isTyped = charIdx < currentInput.length;
+                                                    const isTypingNow = charIdx === currentInput.length - 1;
+                                                    return (
+                                                        <span
+                                                            key={charIdx}
+                                                            className={clsx(
+                                                                "letter-pop-char font-mono",
+                                                                isTyped ? "text-candy-mint" : "text-white/40",
+                                                                isTypingNow && "pop"
+                                                            )}
+                                                        >
+                                                            {isTyped ? originalWord[charIdx] : char}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </motion.span>
+                                        </div>
                                     ) : (
-                                        <span className="font-mono">
+                                        // Level 4: Future words are visible at 0.3 opacity
+                                        <motion.span
+                                            className="font-mono inline-block"
+                                            animate={{
+                                                opacity: isFadeLevel && isLevelStarted && !isPast ? 0.3 : 1
+                                            }}
+                                            transition={{ duration: 0.3 }}
+                                        >
                                             {isPast ? originalWord : displayWord}
-                                        </span>
+                                        </motion.span>
                                     )}
                                 </div>
 

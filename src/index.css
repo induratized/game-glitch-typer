@@ -427,6 +427,29 @@ body {
   }
 }
 
+/* Custom Level 2 Pulse: 0.3s visible, 0.5s invisible (0.8s total) */
+@keyframes level2-pulse {
+  0% {
+    opacity: 1;
+  }
+
+  37.5% {
+    opacity: 1;
+  }
+
+  /* 0.3s mark */
+  38% {
+    opacity: 0;
+  }
+
+  /* Snap to invisible */
+  100% {
+    opacity: 0;
+  }
+
+  /* Stay invisible until 0.8s */
+}
+
 @keyframes flash {
 
   0%,
