@@ -28,8 +28,8 @@ const RestartIcon = () => (
 const CandyModal = ({ isOpen, title, message, onConfirm, onCancel }: { isOpen: boolean; title: string; message: string; onConfirm: () => void; onCancel: () => void }) => (
     <AnimatePresence>
         {isOpen && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-gradient-to-br from-white/10 to-white/5 border-2 border-white/20 p-8 rounded-[40px] shadow-[0_32px_64px_rgba(0,0,0,0.5)] max-w-sm w-full text-center backdrop-blur-xl">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-linear-to-br from-white/10 to-white/5 border-2 border-white/20 p-8 rounded-[40px] shadow-[0_32px_64px_rgba(0,0,0,0.5)] max-w-sm w-full text-center backdrop-blur-xl">
                     <h3 className="text-3xl font-black text-white mb-4 score-level-font">{title}</h3>
                     <p className="text-white/80 mb-8 font-medium">{message}</p>
                     <div className="flex gap-4 justify-center">
@@ -403,12 +403,12 @@ function App() {
 
             {/* Background */}
             <RoamingMascots />
-            <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-50 bg-[length:100%_4px,3px_100%] opacity-20" />
+            <div className="fixed inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-50 bg-size-[100%_4px,3px_100%] opacity-20" />
 
             {/* Loading Overlay */}
             <AnimatePresence>
                 {isLoading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center backdrop-blur-md">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 z-100 bg-black/80 flex flex-col items-center justify-center backdrop-blur-md">
                         <div className="w-16 h-16 border-4 border-candy-mint border-t-transparent rounded-full animate-spin mb-4" />
                         <div className="text-candy-mint font-bold animate-pulse tracking-widest">FETCHING_DATA_NODES...</div>
                     </motion.div>
@@ -508,7 +508,7 @@ function App() {
             </div>
 
             {/* Main Game Area Container */}
-            <div className="w-full flex flex-col items-center pt-[84px] px-4 z-10 gap-5">
+            <div className="w-full flex flex-col items-center pt-21 px-4 z-10 gap-5">
                 {/* Header (Normal Flow) */}
                 <AnimatePresence>
                     {gameState === 'idle' && (
@@ -518,7 +518,7 @@ function App() {
                             exit={{ opacity: 0, y: -20 }}
                             className="text-center w-full px-5"
                         >
-                            <h1 className="hero-title !text-[24vw] md:!text-[12vw] leading-[0.8] text-candy-mint drop-shadow-md">
+                            <h1 className="hero-title text-[24vw]! md:text-[12vw]! leading-[0.8] text-candy-mint drop-shadow-md">
                                 GLITCH<br />TYPER
                             </h1>
                         </motion.div>
@@ -566,10 +566,10 @@ function App() {
                                 key="crashed"
                                 initial={{ opacity: 0, scale: 0.8, rotate: -5 }}
                                 animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                                className="text-center p-10 bg-gradient-to-b from-red-500 to-rose-700 rounded-[50px] border-8 border-white shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_8px_rgba(255,255,255,0.2)] max-w-sm w-full mx-auto relative overflow-hidden"
+                                className="text-center p-10 bg-linear-to-b from-red-500 to-rose-700 rounded-[50px] border-8 border-white shadow-[0_20px_50px_rgba(0,0,0,0.5),0_0_0_8px_rgba(255,255,255,0.2)] max-w-sm w-full mx-auto relative overflow-hidden"
                             >
                                 {/* Decorative Glare */}
-                                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+                                <div className="absolute top-0 left-0 right-0 h-32 bg-linear-to-b from-white/30 to-transparent pointer-events-none" />
 
                                 <div className="relative z-10 flex flex-col items-center">
                                     <Mascot size={120} mood="sad" variant="lollipop" className="mb-6 drop-shadow-2xl" />
@@ -597,7 +597,7 @@ function App() {
                         )}
 
                         {gameState === 'victory' && (
-                            <motion.div key="victory" initial={{ opacity: 0, scale: 1.2 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-16 bg-gradient-to-br from-candy-mint/90 to-candy-pink/90 rounded-[50px] shadow-[0_0_100px_rgba(122,246,217,0.5)] border-4 border-white backdrop-blur-2xl">
+                            <motion.div key="victory" initial={{ opacity: 0, scale: 1.2 }} animate={{ opacity: 1, scale: 1 }} className="text-center p-16 bg-linear-to-br from-candy-mint/90 to-candy-pink/90 rounded-[50px] shadow-[0_0_100px_rgba(122,246,217,0.5)] border-4 border-white backdrop-blur-2xl">
                                 <h2 className="text-6xl font-black text-white mb-4 drop-shadow-lg">VICTORY_!</h2>
                                 <div className="text-8xl font-black text-white mb-8 score-level-font">{score.toLocaleString()}</div>
                                 <button onClick={handleStartGame} className="px-12 py-5 bg-white text-candy-hot-pink font-black rounded-2xl text-2xl shadow-xl hover:scale-110 transition-all">NEXT_LEVEL</button>
@@ -671,6 +671,7 @@ function App() {
                 inputMode="text"
                 autoComplete="off"
                 spellCheck="false"
+                placeholder="Game input"
                 className="fixed top-0 left-0 w-px h-px opacity-0 -z-10"
                 onInput={(e) => {
                     const val = (e.target as HTMLInputElement).value;
